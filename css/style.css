@@ -1,5 +1,5 @@
 /* =========================================================
-   VISIONOVA STAFF ATTENDANCE SYSTEM (VSAS)
+   VISUAL VERTEX STAFF ATTENDANCE SYSTEM (VSAS)
    Phase 1 — Landing Page Stylesheet
    Mobile-first. Organized by section.
    ========================================================= */
@@ -47,6 +47,18 @@ h1, h2, h3, h4 {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Page-leave transition, triggered by js/index.js before navigating
+   away (e.g. clicking "Get Started"). Respects reduced-motion below. */
+body.is-leaving {
+  animation: pageFadeOut 0.22s ease forwards;
+}
+
+@keyframes pageFadeOut {
+  to {
+    opacity: 0;
   }
 }
 

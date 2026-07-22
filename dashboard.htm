@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — VSAS | Visual Vertex Technology Company</title>
+  <meta name="description" content="Staff dashboard for Visual Vertex Staff Attendance System." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body class="dashboard-body">
+
+  <!-- ===================== TOP NAVIGATION ===================== -->
+  <header class="app-topbar">
+    <div class="app-topbar-inner">
+
+      <div class="app-topbar-left">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <a href="../index.html" class="brand">
+          <span class="brand-mark">
+            <!-- COMPANY LOGO HERE -->
+            <span class="brand-mark-letter">V</span>
+          </span>
+          <span class="brand-name">
+            Visual Vertex <span class="brand-name-sub">Technology Company</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="app-topbar-right">
+        <div class="notification-wrap">
+          <button class="icon-btn" id="notificationBell" aria-label="View notifications" aria-expanded="false" aria-haspopup="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M6 9a6 6 0 1112 0c0 3.2 1 5 1.5 5.5H4.5C5 14 6 12.2 6 9z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M9.5 17.5a2.5 2.5 0 005 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span class="notification-dot" id="notificationDot"></span>
+          </button>
+
+          <div class="notification-panel" id="notificationPanel" role="menu">
+            <p class="notification-panel-title">Notifications</p>
+
+            <div class="notification-item" role="menuitem">
+              <span class="notification-item-dot"></span>
+              <div>
+                <p>Company announcement: new leave policy published.</p>
+                <time>2h ago</time>
+              </div>
+            </div>
+
+            <div class="notification-item" role="menuitem">
+              <span class="notification-item-dot"></span>
+              <div>
+                <p>Your attendance report for June is ready.</p>
+                <time>1d ago</time>
+              </div>
+            </div>
+
+            <div class="notification-item" role="menuitem">
+              <span class="notification-item-dot"></span>
+              <div>
+                <p>Reminder: submit your timesheet by Friday.</p>
+                <time>2d ago</time>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="avatar-btn" id="profileMenuTrigger" aria-label="Open profile menu">
+          <span class="avatar-circle">AO</span>
+          <span class="avatar-btn-name">Amaka Okonkwo</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <div class="app-body">
+
+    <!-- Overlay for mobile drawer -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- ===================== SIDEBAR ===================== -->
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <div class="sidebar-brand">
+        <span class="brand-mark">
+          <!-- COMPANY LOGO HERE -->
+          <span class="brand-mark-letter">V</span>
+        </span>
+        <span class="brand-name">
+          Visual Vertex <span class="brand-name-sub">Technology Company</span>
+        </span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="sidebar-link is-active">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+          Dashboard
+        </a>
+        <a href="#" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 12.5l2 2 4-4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.5"/></svg>
+          Attendance
+        </a>
+        <a href="#" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 20V10M12 20V4M18 20v-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Attendance History
+        </a>
+        <a href="#" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8.5" r="3.25" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 20c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          My Profile
+        </a>
+        <a href="#" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 6.5A1.5 1.5 0 015.5 5h13A1.5 1.5 0 0120 6.5V16a1.5 1.5 0 01-1.5 1.5h-9L6 20.5V17.5H5.5A1.5 1.5 0 014 16v-9.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          Announcements
+        </a>
+        <a href="#" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M19 12a7 7 0 00-.15-1.45l1.9-1.48-1.9-3.29-2.24.9a7 7 0 00-2.52-1.46L13.7 3h-3.4l-.4 2.22a7 7 0 00-2.52 1.46l-2.24-.9-1.9 3.29 1.9 1.48A7 7 0 005 12c0 .5.05.98.15 1.45l-1.9 1.48 1.9 3.29 2.24-.9c.75.63 1.6 1.13 2.52 1.46l.4 2.22h3.4l.4-2.22a7 7 0 002.52-1.46l2.24.9 1.9-3.29-1.9-1.48c.1-.47.15-.95.15-1.45z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          Settings
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <a href="login.html" class="sidebar-link sidebar-link--logout" id="logoutLink">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 4.5H6A1.5 1.5 0 004.5 6v12A1.5 1.5 0 006 19.5h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14.5 8.5L18.5 12l-4 3.5M18.5 12H9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Logout
+        </a>
+      </nav>
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <main class="dashboard-main">
+
+      <div class="dashboard-heading">
+        <h1 class="dashboard-greeting" id="greetingText">Good Morning, Amaka</h1>
+        <div class="dashboard-datetime">
+          <span id="currentDateText">Wednesday, August 12, 2026</span>
+          <span class="dot-sep">&bull;</span>
+          <strong id="miniClock">08:41 AM</strong>
+        </div>
+      </div>
+
+      <!-- Profile + Attendance -->
+      <div class="dash-top-row">
+
+        <section class="profile-card" aria-label="Profile summary">
+          <div class="profile-photo">AO</div>
+          <h2 class="profile-name">Amaka Okonkwo</h2>
+          <p class="profile-role">Frontend Engineer</p>
+
+          <div class="profile-meta">
+            <div class="profile-meta-row">
+              <span>Department</span>
+              <span>Product &amp; Engineering</span>
+            </div>
+            <div class="profile-meta-row">
+              <span>Staff ID</span>
+              <span>VV-2049</span>
+            </div>
+            <div class="profile-meta-row">
+              <span>Employment</span>
+              <span>Full-time, Remote</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="attendance-card" aria-label="Today's attendance">
+          <div class="attendance-card-top">
+            <h2>Today&rsquo;s Status</h2>
+            <span class="status-pill status-pill--not-checked-in" id="attendanceStatusPill">Not Checked In</span>
+          </div>
+
+          <div class="attendance-clock">
+            <div class="attendance-clock-time" id="liveClock">08:41:07 AM</div>
+            <div class="attendance-clock-date" id="liveClockDate">Wednesday, August 12, 2026</div>
+          </div>
+
+          <div class="attendance-times">
+            <div class="attendance-time-block">
+              <span class="attendance-time-label">Check In</span>
+              <span class="attendance-time-value" id="checkInTime">&mdash;&mdash;</span>
+            </div>
+            <div class="attendance-time-block">
+              <span class="attendance-time-label">Check Out</span>
+              <span class="attendance-time-value" id="checkOutTime">&mdash;&mdash;</span>
+            </div>
+          </div>
+
+          <button class="btn btn-primary attendance-action-btn" id="attendanceActionBtn" data-action="check-in">
+            Check In
+          </button>
+        </section>
+
+      </div>
+
+      <!-- Statistics -->
+      <h2 class="section-title">Overview</h2>
+      <div class="dash-stats-grid">
+
+        <div class="stat-card">
+          <div class="stat-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 12.5l2 2 4-4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.5"/></svg>
+          </div>
+          <div class="stat-card-value">19 / 20</div>
+          <div class="stat-card-label">Today&rsquo;s Attendance</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.5"/><path d="M12 7.5V12l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="stat-card-value" id="hoursWorkedValue">0h 00m</div>
+          <div class="stat-card-label">Hours Worked Today</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 3v4M16 3v4M3.5 9.5h17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="stat-card-value">21</div>
+          <div class="stat-card-label">Days Present (Month)</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 20V10M12 20V4M18 20v-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="stat-card-value">96%</div>
+          <div class="stat-card-label">Attendance Rate</div>
+        </div>
+
+      </div>
+
+      <!-- Quick Actions -->
+      <h2 class="section-title">Quick Actions</h2>
+      <div class="quick-actions-grid">
+
+        <a href="#" class="quick-action-card">
+          <span class="quick-action-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 20V10M12 20V4M18 20v-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </span>
+          <span>
+            <span class="quick-action-title">Attendance History</span><br />
+            <span class="quick-action-sub">View past check-ins</span>
+          </span>
+        </a>
+
+        <a href="#" class="quick-action-card">
+          <span class="quick-action-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8.5" r="3.25" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 20c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </span>
+          <span>
+            <span class="quick-action-title">My Profile</span><br />
+            <span class="quick-action-sub">Update your details</span>
+          </span>
+        </a>
+
+        <a href="#" class="quick-action-card">
+          <span class="quick-action-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 6.5A1.5 1.5 0 015.5 5h13A1.5 1.5 0 0120 6.5V16a1.5 1.5 0 01-1.5 1.5h-9L6 20.5V17.5H5.5A1.5 1.5 0 014 16v-9.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </span>
+          <span>
+            <span class="quick-action-title">Announcements</span><br />
+            <span class="quick-action-sub">Company updates</span>
+          </span>
+        </a>
+
+        <a href="#" class="quick-action-card">
+          <span class="quick-action-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M19 12a7 7 0 00-.15-1.45l1.9-1.48-1.9-3.29-2.24.9a7 7 0 00-2.52-1.46L13.7 3h-3.4l-.4 2.22a7 7 0 00-2.52 1.46l-2.24-.9-1.9 3.29 1.9 1.48A7 7 0 005 12c0 .5.05.98.15 1.45l-1.9 1.48 1.9 3.29 2.24-.9c.75.63 1.6 1.13 2.52 1.46l.4 2.22h3.4l.4-2.22a7 7 0 002.52-1.46l2.24.9 1.9-3.29-1.9-1.48c.1-.47.15-.95.15-1.45z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          </span>
+          <span>
+            <span class="quick-action-title">Settings</span><br />
+            <span class="quick-action-sub">Preferences &amp; account</span>
+          </span>
+        </a>
+
+      </div>
+
+      <!-- Recent Activity -->
+      <h2 class="section-title">Recent Activity</h2>
+      <section class="activity-section">
+        <div class="activity-table-wrap">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Hours Worked</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="activityTableBody">
+              <tr>
+                <td>Aug 11, 2026</td>
+                <td>08:52 AM</td>
+                <td>05:41 PM</td>
+                <td>8h 49m</td>
+                <td><span class="table-status table-status--ontime">On Time</span></td>
+              </tr>
+              <tr>
+                <td>Aug 10, 2026</td>
+                <td>09:16 AM</td>
+                <td>05:30 PM</td>
+                <td>8h 14m</td>
+                <td><span class="table-status table-status--late">Late</span></td>
+              </tr>
+              <tr>
+                <td>Aug 9, 2026</td>
+                <td>08:47 AM</td>
+                <td>05:38 PM</td>
+                <td>8h 51m</td>
+                <td><span class="table-status table-status--ontime">On Time</span></td>
+              </tr>
+              <tr>
+                <td>Aug 8, 2026</td>
+                <td>&mdash;&mdash;</td>
+                <td>&mdash;&mdash;</td>
+                <td>0h 00m</td>
+                <td><span class="table-status table-status--absent">Absent</span></td>
+              </tr>
+              <tr>
+                <td>Aug 7, 2026</td>
+                <td>08:55 AM</td>
+                <td>05:45 PM</td>
+                <td>8h 50m</td>
+                <td><span class="table-status table-status--ontime">On Time</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/dashboard.js"></script>
+</body>
+</html>

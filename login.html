@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — VSAS | Visual Vertex Technology Company</title>
+  <meta name="description" content="Sign in to continue to Visual Vertex Staff Attendance System." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/auth.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body class="auth-body">
+
+  <div class="auth-shell">
+    <div class="auth-card" role="main">
+
+      <!-- Brand -->
+      <div class="auth-brand">
+        <span class="brand-mark">
+          <!-- COMPANY LOGO HERE -->
+          <span class="brand-mark-letter">V</span>
+        </span>
+        <span class="brand-name">
+          Visual Vertex <span class="brand-name-sub">Technology Company</span>
+        </span>
+      </div>
+
+      <div class="auth-heading">
+        <h1>Welcome Back</h1>
+        <p>Sign in to continue to Visual Vertex Staff Attendance System.</p>
+      </div>
+
+      <!-- Top-level alert (shown/hidden by auth.js) -->
+      <div class="auth-alert auth-alert--error" id="loginAlert" role="alert" aria-live="assertive">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span id="loginAlertText">Invalid Staff ID / email or password. Please try again.</span>
+      </div>
+
+      <form id="loginForm" novalidate>
+
+        <div class="form-group">
+          <label class="form-label" for="loginIdentifier">Staff ID or Email</label>
+          <div class="form-control-wrap">
+            <input
+              type="text"
+              id="loginIdentifier"
+              name="identifier"
+              class="form-control"
+              placeholder="e.g. VV-2049 or you@company.com"
+              autocomplete="username"
+              aria-describedby="identifierError"
+              required
+            />
+          </div>
+          <p class="field-error" id="identifierError">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span>Enter your Staff ID or a valid email address.</span>
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">Password</label>
+          <div class="form-control-wrap form-control-wrap--password">
+            <input
+              type="password"
+              id="loginPassword"
+              name="password"
+              class="form-control"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              aria-describedby="passwordError"
+              required
+            />
+            <button type="button" class="password-toggle" id="loginPasswordToggle" aria-label="Show password" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <circle cx="12" cy="12" r="2.75" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+            </button>
+          </div>
+          <p class="field-error" id="passwordError">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span>Password must be at least 6 characters.</span>
+          </p>
+        </div>
+
+        <div class="form-row-between">
+          <label class="form-check">
+            <input type="checkbox" name="remember" id="rememberMe" />
+            Remember me
+          </label>
+          <a href="forgot-password.html" class="link-inline">Forgot Password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="loginSubmit" data-loading="false">
+          <span class="btn-label">Sign In</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+
+      </form>
+
+      <p class="auth-footer-text">
+        Having trouble signing in? <a href="#" class="link-inline">Contact Support</a>
+      </p>
+
+    </div>
+  </div>
+
+  <script src="../js/auth.js"></script>
+</body>
+</html>

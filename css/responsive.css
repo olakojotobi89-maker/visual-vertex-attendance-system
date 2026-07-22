@@ -1,0 +1,110 @@
+/* =========================================================
+   VSAS — Phase 2
+   responsive.css
+   Cross-page breakpoint rules for auth + dashboard.
+   Loaded last so it can fine-tune auth.css / dashboard.css.
+   Base mobile-first rules already live in style.css,
+   auth.css and dashboard.css — this file only holds the
+   overrides that don't belong in one specific component.
+   ========================================================= */
+
+/* ---------- 360px and below: guard against tiny devices ---------- */
+@media (max-width: 359px) {
+  .auth-card {
+    padding: var(--space-md);
+  }
+
+  .stat-card,
+  .quick-action-card {
+    padding: var(--space-sm);
+  }
+}
+
+/* ---------- Tablet (>= 640px) ---------- */
+@media (min-width: 640px) {
+  .dash-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .quick-actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .auth-card {
+    padding: var(--space-xl);
+  }
+}
+
+/* ---------- Laptop (>= 900px) ---------- */
+@media (min-width: 900px) {
+  .dash-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .quick-actions-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .dash-top-row {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .profile-card {
+    flex: 0 0 320px;
+  }
+
+  .attendance-card {
+    flex: 1;
+  }
+
+  /* Sidebar becomes a permanent rail instead of a drawer */
+  .sidebar {
+    position: sticky;
+    top: var(--header-height);
+    height: calc(100vh - var(--header-height));
+    transform: none;
+    box-shadow: none;
+    border-right: 1px solid var(--border);
+  }
+
+  .sidebar-overlay {
+    display: none !important;
+  }
+
+  .app-body {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+  }
+
+  .sidebar-toggle {
+    display: none;
+  }
+
+  .avatar-btn-name {
+    display: block;
+  }
+}
+
+/* ---------- Desktop (>= 1200px) ---------- */
+@media (min-width: 1200px) {
+  .app-body {
+    grid-template-columns: 280px 1fr;
+  }
+
+  .dashboard-main {
+    padding-inline: var(--space-xl);
+  }
+}
+
+/* ---------- Table horizontal-scroll safety net ---------- */
+@media (max-width: 640px) {
+  .activity-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .activity-table {
+    min-width: 560px;
+  }
+}

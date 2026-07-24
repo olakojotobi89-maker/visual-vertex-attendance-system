@@ -1,0 +1,19 @@
+# Supabase local environment (contains secrets — never commit)
+.env.local
+.env.local.*
+
+# Supabase local development state
+.temp/
+.deno/
+.branches/
+# Local studio database volume
+docker-data/
+
+# IDE / editor files
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+

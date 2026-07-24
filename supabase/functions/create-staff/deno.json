@@ -1,0 +1,17 @@
+{
+  "name": "create-staff",
+  "version": "1.0.0",
+  "exports": "./index.ts",
+  "tasks": {
+    "dev": "deno run --allow-net --allow-env --allow-read --watch index.ts"
+  },
+  "compilerOptions": {
+    "allowJs": false,
+    "strict": true,
+    "lib": ["deno.window", "esnext"]
+  },
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.45.4"
+  }
+}
+

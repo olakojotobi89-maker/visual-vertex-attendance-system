@@ -15,8 +15,8 @@
   // TODO: replace with your actual Supabase project credentials.
   // The anon/public key is safe to expose client-side; it is protected by
   // your Row Level Security (RLS) policies on the "profiles" table.
-  const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
-  const SUPABASE_ANON_KEY = "YOUR-PUBLIC-ANON-KEY";
+  const SUPABASE_URL = "https://yiudsgcuxbzbtxzbsgra.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_ozR_v5TVKLtrd0zZLiZ5UA_HRfz05sz";
 
   if (typeof window.supabase === "undefined") {
     console.error(

@@ -238,22 +238,31 @@ async function resetPassword(email) {
 /* ------------------------------------------------------------------ */
 
 document.addEventListener("DOMContentLoaded", () => {
-  initPasswordToggle();
+  initPasswordToggles();
   initLoginRedirectIfLoggedIn();
   initLoginForm();
+  initForgotPasswordForm();
+  initResetPasswordPage();
 });
 
-/** Show/hide password text via the eye icon button. */
-function initPasswordToggle() {
-  const toggle = document.getElementById("loginPasswordToggle");
-  const input = document.getElementById("loginPassword");
-  if (!toggle || !input) return;
+/**
+ * Show/hide password text via the eye icon button.
+ * Generalized to wire up every `.password-toggle` button on the page
+ * (login has one, reset-password has two), each paired with the
+ * password input inside its own `.form-control-wrap--password`.
+ */
+function initPasswordToggles() {
+  document.querySelectorAll(".password-toggle").forEach((toggle) => {
+    const wrap = toggle.closest(".form-control-wrap--password");
+    const input = wrap ? wrap.querySelector(".form-control") : null;
+    if (!input) return;
 
-  toggle.addEventListener("click", () => {
-    const isPassword = input.type === "password";
-    input.type = isPassword ? "text" : "password";
-    toggle.setAttribute("aria-pressed", String(isPassword));
-    toggle.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
+    toggle.addEventListener("click", () => {
+      const isPassword = input.type === "password";
+      input.type = isPassword ? "text" : "password";
+      toggle.setAttribute("aria-pressed", String(isPassword));
+      toggle.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
+    });
   });
 }
 
@@ -323,6 +332,143 @@ function initLoginForm() {
       showError(err.message || "Unable to sign in. Please try again.");
     } finally {
       setButtonLoading("loginSubmit", false);
+    }
+  });
+}
+
+/** Wires up the Forgot Password form: validation, submit, success-state swap. */
+function initForgotPasswordForm() {
+  const form = document.getElementById("forgotForm");
+  if (!form) return; // not on the forgot-password page
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    clearErrors("forgotAlert");
+
+    const emailInput = document.getElementById("forgotEmail");
+    const email = emailInput.value.trim();
+
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      setFieldError("forgotEmail", "forgotEmailError");
+      return;
+    }
+
+    setButtonLoading("forgotSubmit", true);
+
+    try {
+      await resetPassword(email);
+
+      // Swap the request form out for the "check your inbox" success state.
+      document.getElementById("forgotSentEmail").textContent = email;
+      document.getElementById("forgotFormState").style.display = "none";
+      document.getElementById("forgotSuccessState").style.display = "block";
+    } catch (err) {
+      showError(
+        err.message || "We couldn't send the reset link. Please try again.",
+        "forgotAlert",
+        "forgotAlertText"
+      );
+    } finally {
+      setButtonLoading("forgotSubmit", false);
+    }
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Reset Password page                                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Wires up the Reset Password page.
+ * Supabase redirects here from the email link with a recovery token in the
+ * URL; the client (detectSessionInUrl: true) exchanges it for a session and
+ * fires a "PASSWORD_RECOVERY" auth event. We wait briefly for that before
+ * allowing the form to be used, since the exchange happens asynchronously
+ * right after the page loads.
+ */
+async function initResetPasswordPage() {
+  const form = document.getElementById("resetPasswordForm");
+  if (!form) return; // not on the reset-password page
+
+  if (!window.supabaseClient) {
+    showError(
+      "Authentication service is not available. Please refresh and try again.",
+      "resetAlert",
+      "resetAlertText"
+    );
+    return;
+  }
+
+  let recoveryReady = false;
+
+  window.supabaseClient.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") {
+      recoveryReady = true;
+    }
+  });
+
+  // A session may already be present (event fired before we attached the
+  // listener), or we may need to give the SDK a moment to parse the URL.
+  const { data: initialData } = await window.supabaseClient.auth.getSession();
+  if (initialData?.session) recoveryReady = true;
+
+  if (!recoveryReady) {
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    const { data: retryData } = await window.supabaseClient.auth.getSession();
+    if (retryData?.session) recoveryReady = true;
+  }
+
+  if (!recoveryReady) {
+    showError(
+      "This password reset link is invalid or has expired. Please request a new one.",
+      "resetAlert",
+      "resetAlertText"
+    );
+    form.querySelectorAll("input, button").forEach((el) => {
+      el.disabled = true;
+    });
+    return;
+  }
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    clearErrors("resetAlert");
+
+    const password = document.getElementById("resetPassword").value;
+    const confirmPassword = document.getElementById("resetConfirmPassword").value;
+
+    let hasError = false;
+    if (!password || password.length < 6) {
+      setFieldError("resetPassword", "resetPasswordError");
+      hasError = true;
+    }
+    if (password !== confirmPassword) {
+      setFieldError("resetConfirmPassword", "resetConfirmPasswordError");
+      hasError = true;
+    }
+    if (hasError) return;
+
+    setButtonLoading("resetSubmit", true);
+
+    try {
+      const { error } = await window.supabaseClient.auth.updateUser({ password });
+      if (error) throw new Error(mapAuthError(error));
+
+      // Swap the form out for the success state, then redirect to login.
+      document.getElementById("resetFormState").style.display = "none";
+      document.getElementById("resetSuccessState").style.display = "block";
+
+      setTimeout(() => {
+        window.location.href = LOGIN_PAGE;
+      }, 2500);
+    } catch (err) {
+      showError(
+        err.message || "Unable to reset your password. Please try again.",
+        "resetAlert",
+        "resetAlertText"
+      );
+    } finally {
+      setButtonLoading("resetSubmit", false);
     }
   });
 }

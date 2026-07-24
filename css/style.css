@@ -301,13 +301,15 @@ button:focus-visible {
   margin-bottom: var(--space-md);
 }
 
-.hero-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-lg);
+.hero-buttons{
+    display:flex;
+    align-items:center;
+    margin-bottom:var(--space-lg);
 }
 
+.hero-buttons .btn{
+    display:inline-flex;
+}
 .hero-trust {
   display: flex;
   flex-wrap: wrap;

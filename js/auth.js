@@ -16,10 +16,10 @@
 /* ------------------------------------------------------------------ */
 
 const ROLE_REDIRECTS = {
-  admin: "admin-dashboard.html",
-  hr: "hr-dashboard.html",
-  manager: "manager-dashboard.html",
-  staff: "staff-dashboard.html",
+  admin: "staff management.html",
+  hr: "staff management.html",
+  manager: "staff management.html",
+  staff: "staff management.html",
 };
 
 const LOGIN_PAGE = "login.html";

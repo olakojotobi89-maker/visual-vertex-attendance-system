@@ -21,6 +21,7 @@ const state = {
   currentAdmin: null, // { user, profile }
   allStaff: [], // raw rows from "profiles"
   departments: [], // raw rows from "departments"
+  attendanceToday: [], // raw rows from "attendance" for today's date
   visibleStaff: [], // after search + filter + sort, before pagination
   page: 1,
   pageSize: 10,
@@ -32,6 +33,13 @@ const state = {
 
 const PAGE_SIZE = 10;
 
+// Matches ROLE_REDIRECTS in auth.js: everyone routed to this page by login
+// must actually be allowed to stay on it, or they'd bounce straight back
+// here in an infinite redirect loop.
+const ALLOWED_ROLES = new Set(["admin", "hr", "manager", "ceo"]);
+
+let attendanceChannel = null;
+
 /* ------------------------------------------------------------------ */
 /* Bootstrap                                                           */
 /* ------------------------------------------------------------------ */
@@ -39,11 +47,12 @@ const PAGE_SIZE = 10;
 document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
-  // --- Access control: only authenticated admins may see this page. ---
+  // --- Access control: only Admin/HR/Manager/CEO may see this page. ---
   const auth = await window.VSASAuth.requireAuth();
   if (!auth) return; // requireAuth() already redirected to login.html
 
-  if (auth.profile.role !== "admin") {
+  const role = (auth.profile.role || "").toLowerCase();
+  if (!ALLOWED_ROLES.has(role)) {
     window.VSASAuth.redirectByRole(auth.profile.role);
     return;
   }
@@ -56,7 +65,16 @@ async function init() {
   wireModalEvents();
 
   await Promise.all([loadDepartments(), loadStaff()]);
+  await loadAttendanceToday();
+  subscribeAttendanceRealtime();
 }
+
+/** Unsubscribe the realtime channel if the page is closed/navigated away. */
+window.addEventListener("beforeunload", () => {
+  if (attendanceChannel) {
+    window.supabaseClient.removeChannel(attendanceChannel);
+  }
+});
 
 /** Fills in the header's admin name/avatar/role. */
 function renderAdminHeader(profile) {
@@ -148,9 +166,25 @@ async function loadDepartments() {
     if (error) throw error;
 
     state.departments = data || [];
+
+    // Surface the "table is empty" case loudly instead of leaving the
+    // Department dropdown mysteriously blank with no explanation.
+    if (state.departments.length === 0) {
+      showToast(
+        "No departments found. Add at least one department before adding staff.",
+        "error"
+      );
+    }
   } catch (err) {
     console.error("[VSAS] Failed to load departments:", err);
     state.departments = [];
+    // This branch means the query itself errored (network or RLS denial),
+    // as opposed to succeeding with zero rows — worth telling the user
+    // since the fix (RLS policy vs. empty table) is completely different.
+    showToast(
+      "Could not load departments (permissions or connection issue). Check the console for details.",
+      "error"
+    );
   }
 
   populateDepartmentOptions();
@@ -185,6 +219,10 @@ function renderStats() {
   setStat("statActive", active);
   setStat("statInactive", inactive);
   setStat("statDepartments", deptCount);
+
+  // Staff additions/removals change who should appear on the attendance
+  // roster, so keep that table in lockstep with the staff list.
+  renderAttendanceTable();
 }
 
 function setStat(id, value) {
@@ -567,6 +605,162 @@ function renderPagination(totalPages) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Today's Attendance (live)                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Returns today's date as YYYY-MM-DD in the *browser's local* timezone.
+ * Deliberately not `Date#toISOString()`, which converts to UTC first and
+ * would shift the date for anyone not on UTC — the same helper is used on
+ * dashboard.html so both sides always agree on what "today" means.
+ */
+function todayDateString() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function formatTimeShort(date) {
+  return date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
+
+/** Loads every attendance row for today (RLS lets admin/hr/manager/ceo see all). */
+async function loadAttendanceToday() {
+  const dateLabelEl = document.getElementById("attendanceDateLabel");
+  if (dateLabelEl) {
+    dateLabelEl.textContent = new Date().toLocaleDateString(undefined, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }
+
+  try {
+    const { data, error } = await window.supabaseClient
+      .from("attendance")
+      .select("id, staff_id, work_date, check_in, check_out")
+      .eq("work_date", todayDateString());
+
+    if (error) throw error;
+    state.attendanceToday = data || [];
+  } catch (err) {
+    console.error("[VSAS] Failed to load today's attendance:", err);
+    state.attendanceToday = [];
+  }
+
+  renderAttendanceTable();
+}
+
+/**
+ * Opens a Supabase Realtime channel on the "attendance" table, scoped to
+ * today's date. Any check-in/check-out from any staff member's browser
+ * triggers a live refetch here — no polling, no localStorage, works across
+ * devices and sessions.
+ */
+function subscribeAttendanceRealtime() {
+  const today = todayDateString();
+
+  attendanceChannel = window.supabaseClient
+    .channel("attendance-live")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "attendance", filter: `work_date=eq.${today}` },
+      () => {
+        loadAttendanceToday();
+      }
+    )
+    .subscribe();
+}
+
+/** Builds the { staff, record } roster: every active staff member, matched to today's row (if any). */
+function buildAttendanceRoster() {
+  const activeStaff = state.allStaff.filter((s) => s.is_active !== false);
+
+  const roster = activeStaff.map((staff) => ({
+    staff,
+    record: state.attendanceToday.find((a) => a.staff_id === staff.id) || null,
+  }));
+
+  const rank = (r) => {
+    if (r.record?.check_in && !r.record?.check_out) return 0; // currently checked in
+    if (r.record?.check_out) return 1; // checked out for the day
+    return 2; // not checked in yet
+  };
+
+  roster.sort((a, b) => {
+    const diff = rank(a) - rank(b);
+    if (diff !== 0) return diff;
+    return fullNameOf(a.staff).localeCompare(fullNameOf(b.staff));
+  });
+
+  return roster;
+}
+
+function renderAttendanceTable() {
+  const tbody = document.getElementById("attendanceTableBody");
+  const emptyState = document.getElementById("attendanceEmptyState");
+  if (!tbody) return; // attendance section not present on this page
+
+  const roster = buildAttendanceRoster();
+
+  if (roster.length === 0) {
+    tbody.innerHTML = "";
+    if (emptyState) emptyState.style.display = "block";
+  } else {
+    if (emptyState) emptyState.style.display = "none";
+    tbody.innerHTML = roster.map(renderAttendanceRow).join("");
+  }
+
+  updateAttendanceStatCards(roster);
+}
+
+function renderAttendanceRow({ staff, record }) {
+  const name = fullNameOf(staff);
+  const checkIn = record?.check_in ? formatTimeShort(new Date(record.check_in)) : "—";
+  const checkOut = record?.check_out ? formatTimeShort(new Date(record.check_out)) : "—";
+
+  let statusLabel;
+  let statusClass;
+  if (!record || !record.check_in) {
+    statusLabel = "Not Checked In";
+    statusClass = "badge--inactive";
+  } else if (!record.check_out) {
+    statusLabel = "Checked In";
+    statusClass = "badge--active";
+  } else {
+    statusLabel = "Checked Out";
+    statusClass = "badge--role";
+  }
+
+  return `
+    <tr>
+      <td>${escapeHtml(name)}</td>
+      <td>${escapeHtml(staff.department || "—")}</td>
+      <td>${checkIn}</td>
+      <td>${checkOut}</td>
+      <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+    </tr>`;
+}
+
+function updateAttendanceStatCards(roster) {
+  const checkedIn = roster.filter((r) => r.record?.check_in && !r.record?.check_out).length;
+  const checkedOut = roster.filter((r) => r.record?.check_out).length;
+  const notCheckedIn = roster.length - checkedIn - checkedOut;
+
+  setTextIfPresent("attendanceCheckedInCount", checkedIn);
+  setTextIfPresent("attendanceCheckedOutCount", checkedOut);
+  setTextIfPresent("attendanceNotCheckedInCount", notCheckedIn);
+}
+
+function setTextIfPresent(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+/* ------------------------------------------------------------------ */
 /* Add Staff modal                                                     */
 /* ------------------------------------------------------------------ */
 
@@ -596,6 +790,15 @@ function openAddStaffModal() {
   document.getElementById("addStaffForm").reset();
   document.getElementById("uploadLabel").textContent = "Click to upload a photo (JPG or PNG, max 2MB)";
   clearAddStaffErrors();
+
+  // Warn immediately if there's nothing to select in the Department
+  // dropdown, instead of letting the admin discover it after filling out
+  // the rest of the form.
+  if (state.departments.length === 0) {
+    showAddStaffError(
+      "No departments exist yet. Go to Departments and add one before creating staff."
+    );
+  }
 
   const modal = document.getElementById("addStaffModal");
   modal.classList.add("is-open");

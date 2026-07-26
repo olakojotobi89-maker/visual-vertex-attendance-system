@@ -43,7 +43,11 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !ANON_KEY) {
 const AVATAR_BUCKET = "avatars";
 const ALLOWED_AVATAR_TYPES = new Set(["image/jpeg", "image/png"]);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2MB
-const VALID_ROLES = new Set(["admin", "hr", "manager", "staff"]);
+const VALID_ROLES = new Set(["admin", "hr", "manager", "ceo", "staff"]);
+
+// Roles allowed to create new staff members — matches who staff-management.js
+// lets onto the Staff Management page (see ALLOWED_ROLES there).
+const STAFF_MANAGER_ROLES = new Set(["admin", "hr", "manager", "ceo"]);
 
 // Loosened server-side CORS: tighten `Access-Control-Allow-Origin` to your
 // production domain before going live (e.g. "https://yourapp.com").
@@ -107,8 +111,8 @@ function validatePayload(values: Partial<StaffPayload>): string[] {
   return errors;
 }
 
-/** Confirms the bearer token belongs to a signed-in user whose profile role is "admin". */
-async function requireAdmin(
+/** Confirms the bearer token belongs to a signed-in user whose role can manage staff. */
+async function requireStaffManager(
   req: Request,
   adminClient: SupabaseClient,
 ): Promise<{ ok: true; userId: string } | { ok: false; status: number; message: string }> {
@@ -141,8 +145,8 @@ async function requireAdmin(
     return { ok: false, status: 403, message: "Caller profile not found." };
   }
 
-  if (profile.role !== "admin") {
-    return { ok: false, status: 403, message: "Only admins can create staff members." };
+  if (!STAFF_MANAGER_ROLES.has(profile.role?.toLowerCase())) {
+    return { ok: false, status: 403, message: "Only Admins, HR, Managers, or the CEO can create staff members." };
   }
 
   return { ok: true, userId: callerId };
@@ -228,8 +232,8 @@ Deno.serve(async (req: Request) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // 1. AuthN/AuthZ: caller must be a signed-in admin.
-  const authResult = await requireAdmin(req, adminClient);
+  // 1. AuthN/AuthZ: caller must be a signed-in Admin/HR/Manager/CEO.
+  const authResult = await requireStaffManager(req, adminClient);
   if (!authResult.ok) {
     return errorResponse(authResult.status, authResult.message);
   }

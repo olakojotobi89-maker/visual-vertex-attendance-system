@@ -29,18 +29,14 @@
 
         <a href="../index.html" class="brand">
           <span class="brand-mark">
-            <!-- COMPANY LOGO HERE -->
-          <a href="#home" class="brand">
-    <span class="brand-mark">
-        <img src="../images/logo.png" alt="Visual Vertex Technology Company Logo" class="company-logo">
-    </span>
-
-    <span class="brand-name">
-        Visual Vertex
-        <span class="brand-name-sub">Technology Company</span>
-    </span>
-</a>
-
+            <img src="../images/logo.png" alt="Visual Vertex Technology Company Logo" class="company-logo">
+          </span>
+          <span class="brand-name">
+            Visual Vertex
+            <span class="brand-name-sub">Technology Company</span>
+          </span>
+        </a>
+      </div>
 
       <div class="app-topbar-right">
         <div class="notification-wrap">
@@ -82,8 +78,8 @@
         </div>
 
         <button class="avatar-btn" id="profileMenuTrigger" aria-label="Open profile menu">
-          <span class="avatar-circle">AO</span>
-          <span class="avatar-btn-name">Amaka Okonkwo</span>
+          <span class="avatar-circle" id="topAvatarCircle">--</span>
+          <span class="avatar-btn-name" id="topAvatarName">Loading…</span>
         </button>
       </div>
 
@@ -99,7 +95,6 @@
     <aside class="sidebar" id="sidebar" aria-label="Main navigation">
       <div class="sidebar-brand">
         <span class="brand-mark">
-          <!-- COMPANY LOGO HERE -->
           <span class="brand-mark-letter">V</span>
         </span>
         <span class="brand-name">
@@ -146,11 +141,11 @@
     <main class="dashboard-main">
 
       <div class="dashboard-heading">
-        <h1 class="dashboard-greeting" id="greetingText">Good Morning, Amaka</h1>
+        <h1 class="dashboard-greeting" id="greetingText">Good Morning</h1>
         <div class="dashboard-datetime">
-          <span id="currentDateText">Wednesday, August 12, 2026</span>
+          <span id="currentDateText">&nbsp;</span>
           <span class="dot-sep">&bull;</span>
-          <strong id="miniClock">08:41 AM</strong>
+          <strong id="miniClock">&nbsp;</strong>
         </div>
       </div>
 
@@ -158,22 +153,22 @@
       <div class="dash-top-row">
 
         <section class="profile-card" aria-label="Profile summary">
-          <div class="profile-photo">AO</div>
-          <h2 class="profile-name">Amaka Okonkwo</h2>
-          <p class="profile-role">Frontend Engineer</p>
+          <div class="profile-photo" id="profilePhoto">--</div>
+          <h2 class="profile-name" id="profileName">Loading…</h2>
+          <p class="profile-role" id="profileRole">&nbsp;</p>
 
           <div class="profile-meta">
             <div class="profile-meta-row">
               <span>Department</span>
-              <span>Product &amp; Engineering</span>
+              <span id="profileDepartment">&mdash;</span>
             </div>
             <div class="profile-meta-row">
               <span>Staff ID</span>
-              <span>VV-2049</span>
+              <span id="profileStaffId">&mdash;</span>
             </div>
             <div class="profile-meta-row">
-              <span>Employment</span>
-              <span>Full-time, Remote</span>
+              <span>Position</span>
+              <span id="profilePosition">&mdash;</span>
             </div>
           </div>
         </section>
@@ -185,8 +180,8 @@
           </div>
 
           <div class="attendance-clock">
-            <div class="attendance-clock-time" id="liveClock">08:41:07 AM</div>
-            <div class="attendance-clock-date" id="liveClockDate">Wednesday, August 12, 2026</div>
+            <div class="attendance-clock-time" id="liveClock">&nbsp;</div>
+            <div class="attendance-clock-date" id="liveClockDate">&nbsp;</div>
           </div>
 
           <div class="attendance-times">
@@ -200,8 +195,8 @@
             </div>
           </div>
 
-          <button class="btn btn-primary attendance-action-btn" id="attendanceActionBtn" data-action="check-in">
-            Check In
+          <button class="btn btn-primary attendance-action-btn" id="attendanceActionBtn" data-action="check-in" disabled>
+            Loading…
           </button>
         </section>
 
@@ -215,8 +210,8 @@
           <div class="stat-card-icon">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 12.5l2 2 4-4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.5"/></svg>
           </div>
-          <div class="stat-card-value">19 / 20</div>
-          <div class="stat-card-label">Today&rsquo;s Attendance</div>
+          <div class="stat-card-value" id="companyAttendanceValue">&mdash; / &mdash;</div>
+          <div class="stat-card-label">Today&rsquo;s Attendance (Company)</div>
         </div>
 
         <div class="stat-card">
@@ -231,7 +226,7 @@
           <div class="stat-card-icon">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 3v4M16 3v4M3.5 9.5h17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           </div>
-          <div class="stat-card-value">21</div>
+          <div class="stat-card-value" id="daysPresentValue">0</div>
           <div class="stat-card-label">Days Present (Month)</div>
         </div>
 
@@ -239,8 +234,8 @@
           <div class="stat-card-icon">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 20V10M12 20V4M18 20v-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           </div>
-          <div class="stat-card-value">96%</div>
-          <div class="stat-card-label">Attendance Rate</div>
+          <div class="stat-card-value" id="attendanceRateValue">&mdash;%</div>
+          <div class="stat-card-label">Attendance Rate (Month)</div>
         </div>
 
       </div>
@@ -306,40 +301,9 @@
               </tr>
             </thead>
             <tbody id="activityTableBody">
+              <!-- Rows injected live by dashboard.js from the "attendance" table -->
               <tr>
-                <td>Aug 11, 2026</td>
-                <td>08:52 AM</td>
-                <td>05:41 PM</td>
-                <td>8h 49m</td>
-                <td><span class="table-status table-status--ontime">On Time</span></td>
-              </tr>
-              <tr>
-                <td>Aug 10, 2026</td>
-                <td>09:16 AM</td>
-                <td>05:30 PM</td>
-                <td>8h 14m</td>
-                <td><span class="table-status table-status--late">Late</span></td>
-              </tr>
-              <tr>
-                <td>Aug 9, 2026</td>
-                <td>08:47 AM</td>
-                <td>05:38 PM</td>
-                <td>8h 51m</td>
-                <td><span class="table-status table-status--ontime">On Time</span></td>
-              </tr>
-              <tr>
-                <td>Aug 8, 2026</td>
-                <td>&mdash;&mdash;</td>
-                <td>&mdash;&mdash;</td>
-                <td>0h 00m</td>
-                <td><span class="table-status table-status--absent">Absent</span></td>
-              </tr>
-              <tr>
-                <td>Aug 7, 2026</td>
-                <td>08:55 AM</td>
-                <td>05:45 PM</td>
-                <td>8h 50m</td>
-                <td><span class="table-status table-status--ontime">On Time</span></td>
+                <td colspan="5" style="text-align:center;color:#6b7280;">Loading recent activity…</td>
               </tr>
             </tbody>
           </table>
@@ -348,8 +312,11 @@
 
     </main>
   </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js"></script>
+
+  <!-- Load order: Supabase CDN -> supabase.js (client init) -> auth.js (session/guards) -> dashboard.js (page logic) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/auth.js"></script>
   <script src="../js/main.js"></script>
   <script src="../js/dashboard.js"></script>
 </body>

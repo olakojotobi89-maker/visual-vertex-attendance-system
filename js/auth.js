@@ -15,11 +15,14 @@
 /* Config                                                              */
 /* ------------------------------------------------------------------ */
 
+// Roles are matched case-insensitively (see redirectByRole), so keys here
+// only need to be lowercase once.
 const ROLE_REDIRECTS = {
-  admin: "staff management.html",
-  hr: "staff management.html",
-  manager: "staff management.html",
-  staff: "staff management.html",
+  admin: "staff-management.html",
+  hr: "staff-management.html",
+  ceo: "staff-management.html",
+  manager: "staff-management.html",
+  staff: "dashboard.html",
 };
 
 const LOGIN_PAGE = "login.html";
@@ -206,9 +209,17 @@ async function requireAuth() {
   return { user, profile };
 }
 
-/** Redirects the browser to the dashboard matching the given role. */
+/**
+ * Redirects the browser to the dashboard matching the given role.
+ * Role matching is case-insensitive and trims whitespace, so "Admin",
+ * " admin ", and "ADMIN" all resolve the same way — the `profiles.role`
+ * column value isn't always guaranteed to be lowercase depending on how
+ * a row was created.
+ */
 function redirectByRole(role) {
-  const destination = ROLE_REDIRECTS[role];
+  const normalizedRole = (role || "").trim().toLowerCase();
+  const destination = ROLE_REDIRECTS[normalizedRole];
+
   if (!destination) {
     showError("Your account role is not recognized. Please contact your administrator.");
     return;

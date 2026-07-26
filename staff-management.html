@@ -161,6 +161,64 @@
           </div>
         </section>
 
+        <!-- ==================== TODAY'S ATTENDANCE (live) ==================== -->
+        <section class="table-card" aria-label="Today's attendance" style="margin-bottom:24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:20px 20px 0;">
+            <h2 style="margin:0;font-size:1.05rem;display:flex;align-items:center;gap:8px;">
+              Today's Attendance
+              <span
+                aria-hidden="true"
+                style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,0.18);"
+                title="Live"
+              ></span>
+              <span style="font-size:0.7rem;font-weight:500;color:#16a34a;letter-spacing:0.02em;text-transform:uppercase;">Live</span>
+            </h2>
+            <span id="attendanceDateLabel" style="font-size:0.85rem;color:#6b7280;"></span>
+          </div>
+
+          <div class="stats-grid" style="padding:16px 20px 0;grid-template-columns:repeat(3,1fr);">
+            <div class="stat-card">
+              <div>
+                <div class="stat-value" id="attendanceCheckedInCount">0</div>
+                <div class="stat-label">Checked In</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div>
+                <div class="stat-value" id="attendanceCheckedOutCount">0</div>
+                <div class="stat-label">Checked Out</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div>
+                <div class="stat-value" id="attendanceNotCheckedInCount">0</div>
+                <div class="stat-label">Not Checked In</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-scroll" style="margin-top:16px;">
+            <table class="staff-table">
+              <thead>
+                <tr>
+                  <th>Staff</th>
+                  <th>Department</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceTableBody">
+                <!-- Rows injected live by staff-management.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-state" id="attendanceEmptyState" style="display:none;">
+            <p>No active staff to show attendance for yet.</p>
+          </div>
+        </section>
+
         <!-- Toolbar -->
         <section class="toolbar" aria-label="Search and filters">
           <div class="toolbar-search">
@@ -328,6 +386,7 @@
                   <option value="admin">Admin</option>
                   <option value="hr">HR</option>
                   <option value="manager">Manager</option>
+                  <option value="ceo">CEO</option>
                   <option value="staff">Staff</option>
                 </select>
               </div>
@@ -374,8 +433,8 @@
 
   <!-- Load order: Supabase CDN -> supabase.js (client init) -> auth.js (session/guards) -> staff-management.js (page logic) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../js/supabase.js"></script>
-  <script src="../js/auth.js"></script>
-  <script src="../js/staff-management.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/staff-management.js"></script>
 </body>
 </html>

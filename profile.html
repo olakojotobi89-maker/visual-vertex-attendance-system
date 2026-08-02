@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Profile — VSAS | Visual Vertex Technology Company</title>
+  <meta name="description" content="Staff profile for Visual Vertex Staff Attendance System." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/responsive.css" />
+  <link rel="stylesheet" href="../css/staff management.css" />
+  <link rel="stylesheet" href="../css/profile.css" />
+</head>
+<body class="dashboard-body">
+
+  <!-- ===================== TOP NAVIGATION ===================== -->
+  <header class="app-topbar">
+    <div class="app-topbar-inner">
+
+      <div class="app-topbar-left">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <a href="../index.html" class="brand">
+          <span class="brand-mark">
+            <img src="../images/logo.png" alt="Visual Vertex Technology Company Logo" class="company-logo">
+          </span>
+          <span class="brand-name">
+            Visual Vertex
+            <span class="brand-name-sub">Technology Company</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="app-topbar-right">
+        <button class="avatar-btn" id="profileMenuTrigger" aria-label="Open profile menu">
+          <span class="avatar-circle" id="topAvatarCircle">--</span>
+          <span class="avatar-btn-name" id="topAvatarName">Loading…</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <div class="app-body">
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- ===================== SIDEBAR ===================== -->
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <div class="sidebar-brand">
+         <img src="../images/logo.png" alt="Visual Vertex Technology Company Logo" class="company-logo">
+        <span class="sidebar-brand-name">
+          Visual Vertex
+          <small>Technology Company</small>
+        </span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+          Dashboard
+        </a>
+        <a href="#" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 12.5l2 2 4-4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.5"/></svg>
+          Attendance
+        </a>
+        <a href="#" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 20V10M12 20V4M18 20v-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Attendance History
+        </a>
+        <a href="profile.html" class="sidebar-link is-active">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8.5" r="3.25" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 20c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          My Profile
+        </a>
+        <a href="#" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 6.5A1.5 1.5 0 015.5 5h13A1.5 1.5 0 0120 6.5V16a1.5 1.5 0 01-1.5 1.5h-9L6 20.5V17.5H5.5A1.5 1.5 0 014 16v-9.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          Announcements
+        </a>
+        <a href="#" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M19 12a7 7 0 00-.15-1.45l1.9-1.48-1.9-3.29-2.24.9a7 7 0 00-2.52-1.46L13.7 3h-3.4l-.4 2.22a7 7 0 00-2.52 1.46l-2.24-.9-1.9 3.29 1.9 1.48A7 7 0 005 12c0 .5.05.98.15 1.45l-1.9 1.48 1.9 3.29 2.24-.9c.75.63 1.6 1.13 2.52 1.46l.4 2.22h3.4l.4-2.22a7 7 0 002.52-1.46l2.24.9 1.9-3.29-1.9-1.48c.1-.47.15-.95.15-1.45z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          Settings
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <a href="login.html" class="sidebar-link sidebar-link--logout" id="logoutLink">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 4.5H6A1.5 1.5 0 004.5 6v12A1.5 1.5 0 006 19.5h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14.5 8.5L18.5 12l-4 3.5M18.5 12H9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Logout
+        </a>
+      </nav>
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <main class="dashboard-main">
+
+      <div class="dashboard-heading">
+        <h1 class="dashboard-greeting">My Profile</h1>
+        <div class="dashboard-datetime">
+          <span>Manage your personal details</span>
+        </div>
+      </div>
+
+      <div class="profile-page-row">
+
+        <!-- ============ Left: Photo + read-only identity ============ -->
+        <section class="profile-card" aria-label="Profile summary">
+          <div class="profile-photo" id="profilePhoto">--</div>
+
+          <label class="avatar-upload-label" for="avatarUploadInput" id="avatarUploadLabel">
+            Change photo (JPG or PNG, max 2MB)
+          </label>
+          <input type="file" id="avatarUploadInput" accept="image/png, image/jpeg" style="display:none;" />
+
+          <h2 class="profile-name" id="profileName">Loading…</h2>
+          <p class="profile-role" id="profileRole">&nbsp;</p>
+
+          <div class="profile-meta">
+            <div class="profile-meta-row">
+              <span>Email</span>
+              <span id="profileEmail">&mdash;</span>
+            </div>
+            <div class="profile-meta-row">
+              <span>Department</span>
+              <span id="profileDepartment">&mdash;</span>
+            </div>
+            <div class="profile-meta-row">
+              <span>Staff ID</span>
+              <span id="profileStaffId">&mdash;</span>
+            </div>
+            <div class="profile-meta-row">
+              <span>Position</span>
+              <span id="profilePosition">&mdash;</span>
+            </div>
+            <div class="profile-meta-row">
+              <span>Role</span>
+              <span id="profileRoleValue">&mdash;</span>
+            </div>
+            <div class="profile-meta-row">
+              <span>Joined</span>
+              <span id="profileJoinedDate">&mdash;</span>
+            </div>
+          </div>
+
+          <p class="profile-readonly-note">
+            These details are managed by HR/Admin. Contact them if anything here needs to change.
+          </p>
+        </section>
+
+        <!-- ============ Right: editable forms ============ -->
+        <div class="profile-page-forms">
+
+          <!-- Contact info (editable) -->
+          <section class="profile-edit-card" aria-label="Edit contact info">
+            <h2>Contact Information</h2>
+
+            <div id="contactAlert" class="profile-alert" role="alert" aria-live="assertive"></div>
+
+            <form id="contactForm">
+              <div class="form-group profile-form-group">
+                <label class="form-label" for="phoneInput">Phone Number</label>
+                <div class="form-control-wrap">
+                  <input type="tel" id="phoneInput" class="form-control" placeholder="+234..." />
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" id="saveContactBtn">Save Changes</button>
+            </form>
+          </section>
+
+          <!-- Password change -->
+          <section class="profile-edit-card" aria-label="Change password">
+            <h2>Change Password</h2>
+
+            <div id="passwordAlert" class="profile-alert" role="alert" aria-live="assertive"></div>
+
+            <form id="passwordForm">
+              <div class="form-group profile-form-group">
+                <label class="form-label" for="newPasswordInput">New Password</label>
+                <div class="form-control-wrap">
+                  <input type="password" id="newPasswordInput" class="form-control" placeholder="At least 8 characters" autocomplete="new-password" />
+                </div>
+              </div>
+              <div class="form-group profile-form-group">
+                <label class="form-label" for="confirmPasswordInput">Confirm New Password</label>
+                <div class="form-control-wrap">
+                  <input type="password" id="confirmPasswordInput" class="form-control" placeholder="Re-enter new password" autocomplete="new-password" />
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" id="savePasswordBtn">Update Password</button>
+            </form>
+          </section>
+
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Load order: Supabase CDN -> supabase.js (client init) -> auth.js (session/guards) -> main.js -> profile.js (page logic) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/main.js"></script>
+  <script src="../js/profile.js"></script>
+</body>
+</html>

@@ -232,30 +232,31 @@
         // Upsert on (user_id, attendance_date): creates today's row on first
         // check-in, or safely no-ops/updates check_in if retried — it never
         // touches check_out since that column isn't part of this payload.
-        const { data, error } = await window.supabaseClient
+        const { error } = await window.supabaseClient
           .from("attendance")
           .upsert(
             { user_id: currentUser.id, attendance_date: todayDateString(), check_in: nowIso },
             { onConflict: "user_id,attendance_date" }
-          )
-          .select("id, check_in, check_out")
-          .single();
+          );
 
         if (error) throw error;
-        todayRecord = data;
       } else {
         if (!todayRecord?.id) throw new Error("No check-in found for today yet.");
 
-        const { data, error } = await window.supabaseClient
+        const { error } = await window.supabaseClient
           .from("attendance")
           .update({ check_out: nowIso })
-          .eq("id", todayRecord.id)
-          .select("id, check_in, check_out")
-          .single();
+          .eq("id", todayRecord.id);
 
         if (error) throw error;
-        todayRecord = data;
       }
+
+      // Re-fetch the real row from the database rather than trusting the
+      // mutation's own return value. This is what makes the button state
+      // self-correcting: whatever the DB actually has after the write is
+      // what the UI shows next, so a quirky/empty write response can never
+      // leave the button stuck showing the wrong action.
+      await loadTodayRecord();
 
       renderAttendanceState();
       updateHoursWorked();
@@ -264,6 +265,10 @@
       console.error("[VSAS] Attendance action failed:", err);
       alert(err.message || "Something went wrong. Please try again.");
       els.actionBtn.textContent = originalLabel;
+      // Re-sync with whatever the database actually has, in case the write
+      // partially succeeded (e.g. the check-in landed but the follow-up
+      // read failed) — this avoids a permanently "stuck" button.
+      await loadTodayRecord();
     } finally {
       isSubmitting = false;
       renderAttendanceState(); // re-syncs label/disabled state from the latest todayRecord

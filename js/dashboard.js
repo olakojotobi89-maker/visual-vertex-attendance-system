@@ -148,8 +148,8 @@
     const { data, error } = await window.supabaseClient
       .from("attendance")
       .select("id, check_in, check_out")
-      .eq("staff_id", currentUser.id)
-      .eq("work_date", todayDateString())
+      .eq("user_id", currentUser.id)
+      .eq("attendance_date", todayDateString())
       .maybeSingle();
 
     if (error) {
@@ -229,14 +229,14 @@
       const nowIso = new Date().toISOString();
 
       if (action === "check-in") {
-        // Upsert on (staff_id, work_date): creates today's row on first
+        // Upsert on (user_id, attendance_date): creates today's row on first
         // check-in, or safely no-ops/updates check_in if retried — it never
         // touches check_out since that column isn't part of this payload.
         const { data, error } = await window.supabaseClient
           .from("attendance")
           .upsert(
-            { staff_id: currentUser.id, work_date: todayDateString(), check_in: nowIso },
-            { onConflict: "staff_id,work_date" }
+            { user_id: currentUser.id, attendance_date: todayDateString(), check_in: nowIso },
+            { onConflict: "user_id,attendance_date" }
           )
           .select("id, check_in, check_out")
           .single();
@@ -279,10 +279,10 @@
     try {
       const { data, error } = await window.supabaseClient
         .from("attendance")
-        .select("work_date, check_in")
-        .eq("staff_id", currentUser.id)
-        .gte("work_date", firstOfMonthDateString())
-        .lte("work_date", todayDateString());
+        .select("attendance_date, check_in")
+        .eq("user_id", currentUser.id)
+        .gte("attendance_date", firstOfMonthDateString())
+        .lte("attendance_date", todayDateString());
 
       if (error) throw error;
 
@@ -335,9 +335,9 @@
     try {
       const { data, error } = await window.supabaseClient
         .from("attendance")
-        .select("work_date, check_in, check_out")
-        .eq("staff_id", currentUser.id)
-        .order("work_date", { ascending: false })
+        .select("attendance_date, check_in, check_out")
+        .eq("user_id", currentUser.id)
+        .order("attendance_date", { ascending: false })
         .limit(7);
 
       if (error) throw error;
@@ -357,9 +357,9 @@
   }
 
   function renderActivityRow(row) {
-    // work_date is a plain "YYYY-MM-DD"; parsing as local avoids the
+    // attendance_date is a plain "YYYY-MM-DD"; parsing as local avoids the
     // off-by-one-day shift that `new Date("YYYY-MM-DD")` (UTC) can cause.
-    const [y, m, d] = row.work_date.split("-").map(Number);
+    const [y, m, d] = row.attendance_date.split("-").map(Number);
     const dateObj = new Date(y, m - 1, d);
 
     const checkIn = row.check_in ? new Date(row.check_in) : null;

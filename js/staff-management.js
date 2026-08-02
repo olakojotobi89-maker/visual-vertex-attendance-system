@@ -641,8 +641,8 @@ async function loadAttendanceToday() {
   try {
     const { data, error } = await window.supabaseClient
       .from("attendance")
-      .select("id, staff_id, work_date, check_in, check_out")
-      .eq("work_date", todayDateString());
+      .select("id, user_id, attendance_date, check_in, check_out")
+      .eq("attendance_date", todayDateString());
 
     if (error) throw error;
     state.attendanceToday = data || [];
@@ -667,7 +667,7 @@ function subscribeAttendanceRealtime() {
     .channel("attendance-live")
     .on(
       "postgres_changes",
-      { event: "*", schema: "public", table: "attendance", filter: `work_date=eq.${today}` },
+      { event: "*", schema: "public", table: "attendance", filter: `attendance_date=eq.${today}` },
       () => {
         loadAttendanceToday();
       }
@@ -681,7 +681,7 @@ function buildAttendanceRoster() {
 
   const roster = activeStaff.map((staff) => ({
     staff,
-    record: state.attendanceToday.find((a) => a.staff_id === staff.id) || null,
+    record: state.attendanceToday.find((a) => a.user_id === staff.id) || null,
   }));
 
   const rank = (r) => {

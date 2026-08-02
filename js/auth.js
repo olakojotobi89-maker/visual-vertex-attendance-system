@@ -15,8 +15,6 @@
 /* Config                                                              */
 /* ------------------------------------------------------------------ */
 
-// Roles are matched case-insensitively (see redirectByRole), so keys here
-// only need to be lowercase once.
 const ROLE_REDIRECTS = {
   admin: "staff-management.html",
   hr: "staff-management.html",
@@ -31,7 +29,6 @@ const LOGIN_PAGE = "login.html";
 /* UI helpers: alerts + field errors                                   */
 /* ------------------------------------------------------------------ */
 
-/** Show an error message in the page's alert banner. */
 function showError(message, alertId = "loginAlert", textId = "loginAlertText") {
   const alertBox = document.getElementById(alertId);
   const alertText = document.getElementById(textId);
@@ -43,7 +40,6 @@ function showError(message, alertId = "loginAlert", textId = "loginAlertText") {
   alertBox.style.display = "flex";
 }
 
-/** Show a success message in the page's alert banner. */
 function showSuccess(message, alertId = "loginAlert", textId = "loginAlertText") {
   const alertBox = document.getElementById(alertId);
   const alertText = document.getElementById(textId);
@@ -55,7 +51,6 @@ function showSuccess(message, alertId = "loginAlert", textId = "loginAlertText")
   alertBox.style.display = "flex";
 }
 
-/** Hide the alert banner and clear any per-field validation states. */
 function clearErrors(alertId = "loginAlert") {
   const alertBox = document.getElementById(alertId);
   if (alertBox) alertBox.style.display = "none";
@@ -71,7 +66,6 @@ function setFieldError(inputId, errorId) {
   if (error) error.classList.add("is-visible");
 }
 
-/** Toggle the submit button's loading/disabled state. */
 function setButtonLoading(buttonId, isLoading) {
   const btn = document.getElementById(buttonId);
   if (!btn) return;
@@ -102,11 +96,6 @@ function mapAuthError(error) {
 /* Core auth functions                                                 */
 /* ------------------------------------------------------------------ */
 
-/**
- * Resolve a login identifier to an email address.
- * Accepts either an email directly, or a Staff ID that gets looked up
- * in the "profiles" table.
- */
 async function resolveEmail(identifier) {
   const value = identifier.trim();
   const looksLikeEmail = /\S+@\S+\.\S+/.test(value);
@@ -125,20 +114,11 @@ async function resolveEmail(identifier) {
   return data.email;
 }
 
-/**
- * Sign a user in with Supabase Auth.
- * @param {string} identifier - Staff ID or email.
- * @param {string} password
- * @param {boolean} rememberMe - Controls session persistence (see supabase.js).
- * @returns {Promise<{user: object, session: object}>}
- */
 async function login(identifier, password, rememberMe) {
   if (!window.supabaseClient) {
     throw new Error("Authentication service is not available. Please refresh and try again.");
   }
 
-  // Must be set BEFORE signInWithPassword() so the custom storage adapter
-  // in supabase.js knows whether to persist to localStorage or sessionStorage.
   localStorage.setItem("vsas_remember_me", rememberMe ? "true" : "false");
 
   const email = await resolveEmail(identifier);
@@ -155,7 +135,6 @@ async function login(identifier, password, rememberMe) {
   return data;
 }
 
-/** Sign the current user out and send them back to the login page. */
 async function logout() {
   if (!window.supabaseClient) return;
   await window.supabaseClient.auth.signOut();
@@ -163,7 +142,6 @@ async function logout() {
   window.location.href = LOGIN_PAGE;
 }
 
-/** Returns the currently authenticated Supabase user, or null. */
 async function getCurrentUser() {
   if (!window.supabaseClient) return null;
   const { data, error } = await window.supabaseClient.auth.getUser();
@@ -177,7 +155,7 @@ async function getProfile(userId) {
 
   const { data, error } = await window.supabaseClient
     .from("profiles")
-    .select("id, staff_id, first_name, last_name, email, department, position, role, is_active")
+    .select("id, staff_id, first_name, last_name, email, department, position, role, is_active, avatar_url")
     .eq("id", userId)
     .single();
 
@@ -185,11 +163,6 @@ async function getProfile(userId) {
   return data;
 }
 
-/**
- * Guards a protected page: redirects to login.html if there is no
- * authenticated session, no matching profile, or the account is inactive.
- * @returns {Promise<{user: object, profile: object} | null>}
- */
 async function requireAuth() {
   const user = await getCurrentUser();
 
@@ -209,13 +182,6 @@ async function requireAuth() {
   return { user, profile };
 }
 
-/**
- * Redirects the browser to the dashboard matching the given role.
- * Role matching is case-insensitive and trims whitespace, so "Admin",
- * " admin ", and "ADMIN" all resolve the same way — the `profiles.role`
- * column value isn't always guaranteed to be lowercase depending on how
- * a row was created.
- */
 function redirectByRole(role) {
   const normalizedRole = (role || "").trim().toLowerCase();
   const destination = ROLE_REDIRECTS[normalizedRole];
@@ -227,7 +193,6 @@ function redirectByRole(role) {
   window.location.href = destination;
 }
 
-/** Sends a Supabase password reset email. */
 async function resetPassword(email) {
   if (!window.supabaseClient) {
     throw new Error("Authentication service is not available. Please refresh and try again.");
@@ -256,12 +221,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initResetPasswordPage();
 });
 
-/**
- * Show/hide password text via the eye icon button.
- * Generalized to wire up every `.password-toggle` button on the page
- * (login has one, reset-password has two), each paired with the
- * password input inside its own `.form-control-wrap--password`.
- */
 function initPasswordToggles() {
   document.querySelectorAll(".password-toggle").forEach((toggle) => {
     const wrap = toggle.closest(".form-control-wrap--password");
@@ -277,10 +236,9 @@ function initPasswordToggles() {
   });
 }
 
-/** If a valid session already exists, skip the login form entirely. */
 async function initLoginRedirectIfLoggedIn() {
   const form = document.getElementById("loginForm");
-  if (!form) return; // not on the login page
+  if (!form) return;
 
   const user = await getCurrentUser();
   if (!user) return;
@@ -291,7 +249,6 @@ async function initLoginRedirectIfLoggedIn() {
   }
 }
 
-/** Wires up the login form: validation, submit, Supabase auth, redirect. */
 function initLoginForm() {
   const form = document.getElementById("loginForm");
   if (!form) return;
@@ -304,7 +261,6 @@ function initLoginForm() {
     const password = document.getElementById("loginPassword").value;
     const rememberMe = document.getElementById("rememberMe").checked;
 
-    // Preserve existing client-side validation rules.
     let hasError = false;
     if (!identifier) {
       setFieldError("loginIdentifier", "identifierError");
@@ -347,10 +303,9 @@ function initLoginForm() {
   });
 }
 
-/** Wires up the Forgot Password form: validation, submit, success-state swap. */
 function initForgotPasswordForm() {
   const form = document.getElementById("forgotForm");
-  if (!form) return; // not on the forgot-password page
+  if (!form) return;
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -369,7 +324,6 @@ function initForgotPasswordForm() {
     try {
       await resetPassword(email);
 
-      // Swap the request form out for the "check your inbox" success state.
       document.getElementById("forgotSentEmail").textContent = email;
       document.getElementById("forgotFormState").style.display = "none";
       document.getElementById("forgotSuccessState").style.display = "block";
@@ -389,17 +343,9 @@ function initForgotPasswordForm() {
 /* Reset Password page                                                 */
 /* ------------------------------------------------------------------ */
 
-/**
- * Wires up the Reset Password page.
- * Supabase redirects here from the email link with a recovery token in the
- * URL; the client (detectSessionInUrl: true) exchanges it for a session and
- * fires a "PASSWORD_RECOVERY" auth event. We wait briefly for that before
- * allowing the form to be used, since the exchange happens asynchronously
- * right after the page loads.
- */
 async function initResetPasswordPage() {
   const form = document.getElementById("resetPasswordForm");
-  if (!form) return; // not on the reset-password page
+  if (!form) return;
 
   if (!window.supabaseClient) {
     showError(
@@ -418,8 +364,6 @@ async function initResetPasswordPage() {
     }
   });
 
-  // A session may already be present (event fired before we attached the
-  // listener), or we may need to give the SDK a moment to parse the URL.
   const { data: initialData } = await window.supabaseClient.auth.getSession();
   if (initialData?.session) recoveryReady = true;
 
@@ -465,7 +409,6 @@ async function initResetPasswordPage() {
       const { error } = await window.supabaseClient.auth.updateUser({ password });
       if (error) throw new Error(mapAuthError(error));
 
-      // Swap the form out for the success state, then redirect to login.
       document.getElementById("resetFormState").style.display = "none";
       document.getElementById("resetSuccessState").style.display = "block";
 

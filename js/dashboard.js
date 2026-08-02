@@ -128,14 +128,26 @@
     const fullName = `${currentProfile.first_name || ""} ${currentProfile.last_name || ""}`.trim() || "Staff Member";
     const initials = getInitials(fullName);
 
-    if (els.profilePhoto) els.profilePhoto.textContent = initials;
+    if (els.profilePhoto) {
+      if (currentProfile.avatar_url) {
+        els.profilePhoto.innerHTML = `<img src="${escapeHtml(currentProfile.avatar_url)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      } else {
+        els.profilePhoto.textContent = initials;
+      }
+    }
     if (els.profileName) els.profileName.textContent = fullName;
     if (els.profileRole) els.profileRole.textContent = currentProfile.position || currentProfile.role || "";
     if (els.profileDepartment) els.profileDepartment.textContent = currentProfile.department || "—";
     if (els.profileStaffId) els.profileStaffId.textContent = currentProfile.staff_id || "—";
     if (els.profilePosition) els.profilePosition.textContent = currentProfile.position || "—";
 
-    if (els.topAvatarCircle) els.topAvatarCircle.textContent = initials;
+    if (els.topAvatarCircle) {
+      if (currentProfile.avatar_url) {
+        els.topAvatarCircle.innerHTML = `<img src="${escapeHtml(currentProfile.avatar_url)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      } else {
+        els.topAvatarCircle.textContent = initials;
+      }
+    }
     if (els.topAvatarName) els.topAvatarName.textContent = fullName;
 
     updateGreeting();

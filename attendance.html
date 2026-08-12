@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard — VSAS | Visual Vertex Technology Company</title>
-  <meta name="description" content="Staff dashboard for Visual Vertex Staff Attendance System." />
+  <title>Attendance — VSAS | Visual Vertex Technology Company</title>
+  <meta name="description" content="View and manage your attendance for Visual Vertex Staff Attendance System." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,29 +50,8 @@
 
           <div class="notification-panel" id="notificationPanel" role="menu">
             <p class="notification-panel-title">Notifications</p>
-
-            <div class="notification-item" role="menuitem">
-              <span class="notification-item-dot"></span>
-              <div>
-                <p>Company announcement: new leave policy published.</p>
-                <time>2h ago</time>
-              </div>
-            </div>
-
-            <div class="notification-item" role="menuitem">
-              <span class="notification-item-dot"></span>
-              <div>
-                <p>Your attendance report for June is ready.</p>
-                <time>1d ago</time>
-              </div>
-            </div>
-
-            <div class="notification-item" role="menuitem">
-              <span class="notification-item-dot"></span>
-              <div>
-                <p>Reminder: submit your timesheet by Friday.</p>
-                <time>2d ago</time>
-              </div>
+            <div id="notificationList">
+              <p style="font-size: 0.8rem; color: var(--muted); padding: 0.5rem;">Loading...</p>
             </div>
           </div>
         </div>
@@ -102,11 +81,11 @@
       </div>
 
       <nav class="sidebar-nav">
-        <a href="dashboard.html" class="sidebar-link is-active">
+        <a href="dashboard.html" class="sidebar-link">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
           Dashboard
         </a>
-        <a href="attendance.html" class="sidebar-link">
+        <a href="attendance.html" class="sidebar-link is-active">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 12.5l2 2 4-4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.5"/></svg>
           Attendance
         </a>
@@ -140,37 +119,14 @@
     <main class="dashboard-main">
 
       <div class="dashboard-heading">
-        <h1 class="dashboard-greeting" id="greetingText">Good Morning</h1>
+        <h1 class="dashboard-greeting">My Attendance</h1>
         <div class="dashboard-datetime">
           <span id="currentDateText">&nbsp;</span>
-          <span class="dot-sep">&bull;</span>
-          <strong id="miniClock">&nbsp;</strong>
         </div>
       </div>
 
-      <!-- Profile + Attendance -->
+      <!-- Today's Status + Overview -->
       <div class="dash-top-row">
-
-        <section class="profile-card" aria-label="Profile summary">
-          <div class="profile-photo" id="profilePhoto">--</div>
-          <h2 class="profile-name" id="profileName">Loading…</h2>
-          <p class="profile-role" id="profileRole">&nbsp;</p>
-
-          <div class="profile-meta">
-            <div class="profile-meta-row">
-              <span>Department</span>
-              <span id="profileDepartment">&mdash;</span>
-            </div>
-            <div class="profile-meta-row">
-              <span>Staff ID</span>
-              <span id="profileStaffId">&mdash;</span>
-            </div>
-            <div class="profile-meta-row">
-              <span>Position</span>
-              <span id="profilePosition">&mdash;</span>
-            </div>
-          </div>
-        </section>
 
         <section class="attendance-card" aria-label="Today's attendance">
           <div class="attendance-card-top">
@@ -199,97 +155,36 @@
           </button>
         </section>
 
-      </div>
+        <section class="profile-card" aria-label="Attendance Overview">
+          <h2 class="section-title" style="text-align: left; width: 100%; margin-bottom: var(--space-md);">Overview (This Month)</h2>
 
-      <!-- Statistics -->
-      <h2 class="section-title">Overview</h2>
-      <div class="dash-stats-grid">
-
-        <div class="stat-card">
-          <div class="stat-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 12.5l2 2 4-4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.5"/></svg>
+          <div class="profile-meta">
+            <div class="profile-meta-row">
+              <span>Days Present</span>
+              <span id="daysPresentValue">&mdash;</span>
+            </div>
+            <div class="profile-meta-row">
+              <span>Attendance Rate</span>
+              <span id="attendanceRateValue">&mdash;%</span>
+            </div>
+            <div class="profile-meta-row">
+              <span>Total Hours Worked</span>
+              <span id="totalHoursValue">&mdash;</span>
+            </div>
+            <div class="profile-meta-row">
+              <span>Average Hours / Day</span>
+              <span id="avgHoursValue">&mdash;</span>
+            </div>
           </div>
-          <div class="stat-card-value" id="companyAttendanceValue">&mdash; / &mdash;</div>
-          <div class="stat-card-label">Today&rsquo;s Attendance (Company)</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.5"/><path d="M12 7.5V12l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="stat-card-value" id="hoursWorkedValue">0h 00m</div>
-          <div class="stat-card-label">Hours Worked Today</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 3v4M16 3v4M3.5 9.5h17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </div>
-          <div class="stat-card-value" id="daysPresentValue">0</div>
-          <div class="stat-card-label">Days Present (Month)</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 20V10M12 20V4M18 20v-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </div>
-          <div class="stat-card-value" id="attendanceRateValue">&mdash;%</div>
-          <div class="stat-card-label">Attendance Rate (Month)</div>
-        </div>
+        </section>
 
       </div>
 
-      <!-- Quick Actions -->
-      <h2 class="section-title">Quick Actions</h2>
-      <div class="quick-actions-grid">
-
-        <a href="#" class="quick-action-card">
-          <span class="quick-action-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 20V10M12 20V4M18 20v-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </span>
-          <span>
-            <span class="quick-action-title">Attendance History</span><br />
-            <span class="quick-action-sub">View past check-ins</span>
-          </span>
-        </a>
-
-        <a href="profile.html" class="quick-action-card">
-          <span class="quick-action-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8.5" r="3.25" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 20c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </span>
-          <span>
-            <span class="quick-action-title">My Profile</span><br />
-            <span class="quick-action-sub">Update your details</span>
-          </span>
-        </a>
-
-        <a href="#" class="quick-action-card">
-          <span class="quick-action-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 6.5A1.5 1.5 0 015.5 5h13A1.5 1.5 0 0120 6.5V16a1.5 1.5 0 01-1.5 1.5h-9L6 20.5V17.5H5.5A1.5 1.5 0 014 16v-9.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-          </span>
-          <span>
-            <span class="quick-action-title">Announcements</span><br />
-            <span class="quick-action-sub">Company updates</span>
-          </span>
-        </a>
-
-        <a href="#" class="quick-action-card">
-          <span class="quick-action-icon">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M19 12a7 7 0 00-.15-1.45l1.9-1.48-1.9-3.29-2.24.9a7 7 0 00-2.52-1.46L13.7 3h-3.4l-.4 2.22a7 7 0 00-2.52 1.46l-2.24-.9-1.9 3.29 1.9 1.48A7 7 0 005 12c0 .5.05.98.15 1.45l-1.9 1.48 1.9 3.29 2.24-.9c.75.63 1.6 1.13 2.52 1.46l.4 2.22h3.4l.4-2.22a7 7 0 002.52-1.46l2.24.9 1.9-3.29-1.9-1.48c.1-.47.15-.95.15-1.45z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
-          </span>
-          <span>
-            <span class="quick-action-title">Settings</span><br />
-            <span class="quick-action-sub">Preferences &amp; account</span>
-          </span>
-        </a>
-
-      </div>
-
-      <!-- Attendance History / Recent Activity -->
+      <!-- Attendance History -->
       <div class="section-header">
-        <h2 class="section-title">Recent Activity</h2>
+        <h2 class="section-title">Attendance History</h2>
         <div class="section-actions">
-          <select id="pdfPeriodSelect" class="toolbar-select" aria-label="Select report period">
+          <select id="historyPeriodSelect" class="toolbar-select" aria-label="Select history period">
             <option value="this-month">This Month</option>
             <option value="last-month">Last Month</option>
             <option value="last-3-months">Last 3 Months</option>
@@ -321,9 +216,8 @@
               </tr>
             </thead>
             <tbody id="activityTableBody">
-              <!-- Rows injected live by dashboard.js from the "attendance" table -->
               <tr>
-                <td colspan="5" style="text-align:center;color:#6b7280;">Loading recent activity…</td>
+                <td colspan="5" style="text-align:center;color:#6b7280;">Loading attendance history…</td>
               </tr>
             </tbody>
           </table>
@@ -333,15 +227,13 @@
     </main>
   </div>
 
-  <!-- Load order: Supabase CDN -> PDF libs -> supabase.js (client init) -> auth.js (session/guards) -> main.js -> dashboard.js (page logic) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- jsPDF and auto-table plugin for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
   <script src="../js/supabase.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/main.js"></script>
-  <script src="../js/dashboard.js"></script>
+  <script src="../js/attendance.js"></script>
 </body>
 </html>

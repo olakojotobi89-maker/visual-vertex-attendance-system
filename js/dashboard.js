@@ -8,8 +8,9 @@
 
    Depends on (must be loaded first, in this order):
      1. Supabase CDN            -> window.supabase
-     2. js/supabase.js          -> window.supabaseClient
-     3. js/auth.js              -> window.VSASAuth (requireAuth, logout, etc.)
+     2. jsPDF + jsPDF-AutoTable -> window.jspdf.jsPDF / doc.autoTable
+     3. js/supabase.js          -> window.supabaseClient
+     4. js/auth.js              -> window.VSASAuth (requireAuth, logout, etc.)
    ========================================================= */
 
 (function () {
@@ -20,7 +21,8 @@
   let currentUser = null; // Supabase auth user
   let currentProfile = null; // "profiles" row
   let todayRecord = null; // this user's "attendance" row for today, or null
-  let isSubmitting = false; // guards against double-click race conditions
+  let isSubmitting = false; // guards against double-click race conditions on check-in/out
+  let isExportingPdf = false; // guards against double-click race conditions on PDF export
 
   /* ---------- Date helpers ---------- */
 
@@ -31,7 +33,10 @@
    * so both sides agree on which calendar day a check-in belongs to.
    */
   function todayDateString() {
-    const d = new Date();
+    return toDateString(new Date());
+  }
+
+  function toDateString(d) {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
@@ -377,6 +382,11 @@
     }
   }
 
+  function attendanceStatusFor(checkIn) {
+    if (!checkIn) return "Absent";
+    return checkIn.getHours() <= ON_TIME_CUTOFF_HOUR ? "On Time" : "Late";
+  }
+
   function renderActivityRow(row) {
     // attendance_date is a plain "YYYY-MM-DD"; parsing as local avoids the
     // off-by-one-day shift that `new Date("YYYY-MM-DD")` (UTC) can cause.
@@ -386,18 +396,13 @@
     const checkIn = row.check_in ? new Date(row.check_in) : null;
     const checkOut = row.check_out ? new Date(row.check_out) : null;
 
-    let statusLabel;
-    let statusClass;
-    if (!checkIn) {
-      statusLabel = "Absent";
-      statusClass = "table-status--absent";
-    } else if (checkIn.getHours() <= ON_TIME_CUTOFF_HOUR) {
-      statusLabel = "On Time";
-      statusClass = "table-status--ontime";
-    } else {
-      statusLabel = "Late";
-      statusClass = "table-status--late";
-    }
+    const statusLabel = attendanceStatusFor(checkIn);
+    const statusClass =
+      statusLabel === "Absent"
+        ? "table-status--absent"
+        : statusLabel === "On Time"
+        ? "table-status--ontime"
+        : "table-status--late";
 
     const hoursWorked = checkIn ? formatDuration((checkOut || new Date()) - checkIn) : "0h 00m";
 
@@ -409,6 +414,225 @@
         <td>${hoursWorked}</td>
         <td><span class="table-status ${statusClass}">${statusLabel}</span></td>
       </tr>`;
+  }
+
+  /* ---------- PDF Export ---------- */
+
+  const PDF_PERIOD_LABELS = {
+    "this-month": "This Month",
+    "last-month": "Last Month",
+    "last-3-months": "Last 3 Months",
+    "all-time": "All Time",
+  };
+
+  /** Resolves a period key from the <select> into a concrete [start, end] date range. */
+  function getPdfPeriodRange(periodKey) {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth(); // 0-indexed
+
+    switch (periodKey) {
+      case "last-month": {
+        const start = new Date(y, m - 1, 1);
+        const end = new Date(y, m, 0); // day 0 of this month = last day of previous month
+        return { start: toDateString(start), end: toDateString(end) };
+      }
+      case "last-3-months": {
+        const start = new Date(y, m - 2, 1);
+        return { start: toDateString(start), end: toDateString(now) };
+      }
+      case "all-time":
+        return { start: "1970-01-01", end: toDateString(now) };
+      case "this-month":
+      default: {
+        const start = new Date(y, m, 1);
+        return { start: toDateString(start), end: toDateString(now) };
+      }
+    }
+  }
+
+  function showPdfError(message) {
+    if (!els.pdfErrorAlert) return;
+    if (!message) {
+      els.pdfErrorAlert.style.display = "none";
+      els.pdfErrorAlert.textContent = "";
+      return;
+    }
+    els.pdfErrorAlert.textContent = message;
+    els.pdfErrorAlert.style.display = "block";
+  }
+
+  function sanitizeFilenamePart(value) {
+    const cleaned = String(value || "")
+      .trim()
+      .replace(/[^a-z0-9]+/gi, "_")
+      .replace(/^_+|_+$/g, "");
+    return cleaned || "Staff";
+  }
+
+  function setPdfButtonLoading(isLoading) {
+    if (!els.downloadPdfBtn) return;
+    els.downloadPdfBtn.disabled = isLoading;
+    els.downloadPdfBtn.classList.toggle("is-loading", isLoading);
+  }
+
+  /**
+   * Click handler for "Download PDF". Reuses the exact same table/columns/
+   * user_id filter that the already-working Recent Activity and personal
+   * stats queries use — same staff <-> attendance relationship, same RLS,
+   * no service-role key, no schema changes. A user can only ever fetch
+   * rows where user_id == their own auth id.
+   */
+  async function handlePdfExport() {
+    if (isExportingPdf) return;
+    if (!currentUser) return;
+
+    showPdfError(null);
+
+    // A failed/blocked CDN load must only disable the PDF feature, never
+    // the rest of the dashboard — which has already finished initializing
+    // by the time this click can even happen.
+    const jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+    if (!jsPDFCtor) {
+      showPdfError("The PDF library didn't load. Please check your connection and try again.");
+      return;
+    }
+
+    const periodKey = els.pdfPeriodSelect ? els.pdfPeriodSelect.value : "this-month";
+    const periodLabel = PDF_PERIOD_LABELS[periodKey] || "This Month";
+    const { start, end } = getPdfPeriodRange(periodKey);
+
+    isExportingPdf = true;
+    setPdfButtonLoading(true);
+
+    try {
+      const { data, error } = await window.supabaseClient
+        .from("attendance")
+        .select("attendance_date, check_in, check_out")
+        .eq("user_id", currentUser.id)
+        .gte("attendance_date", start)
+        .lte("attendance_date", end)
+        .order("attendance_date", { ascending: true });
+
+      if (error) throw error;
+
+      generateAttendancePdf(data || [], { periodLabel, start, end });
+    } catch (err) {
+      console.error("[VSAS] PDF export failed:", err);
+      showPdfError(err.message || "Couldn't generate the PDF. Please try again.");
+    } finally {
+      isExportingPdf = false;
+      setPdfButtonLoading(false);
+    }
+  }
+
+  /** Builds and downloads the PDF from already-fetched attendance rows. */
+  function generateAttendancePdf(rows, { periodLabel, start, end }) {
+    const jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+    if (!jsPDFCtor) throw new Error("The PDF library is not available.");
+
+    const doc = new jsPDFCtor({ unit: "pt", format: "a4" });
+    if (typeof doc.autoTable !== "function") {
+      throw new Error("The PDF table library is not available.");
+    }
+
+    const fullName = `${currentProfile?.first_name || ""} ${currentProfile?.last_name || ""}`.trim() || "Staff Member";
+
+    // --- Summary calculations (from the real fetched rows) ---
+    const totalDays = rows.length;
+    const presentRows = rows.filter((r) => r.check_in);
+    const daysPresent = presentRows.length;
+    const attendanceRate = totalDays > 0 ? Math.round((daysPresent / totalDays) * 100) : 0;
+
+    let totalMs = 0;
+    presentRows.forEach((r) => {
+      const checkIn = new Date(r.check_in);
+      const checkOut = r.check_out ? new Date(r.check_out) : checkIn;
+      totalMs += Math.max(0, checkOut - checkIn);
+    });
+    const totalHoursLabel = formatDuration(totalMs);
+    const avgHoursLabel = daysPresent > 0 ? formatDuration(totalMs / daysPresent) : "0h 00m";
+
+    // --- Header ---
+    doc.setFontSize(16);
+    doc.setFont(undefined, "bold");
+    doc.text("Visual Vertex Technology Company", 40, 50);
+
+    doc.setFontSize(12);
+    doc.setFont(undefined, "normal");
+    doc.text("Staff Attendance Report", 40, 68);
+
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Report period: ${periodLabel} (${start} to ${end})`, 40, 84);
+    doc.text(`Generated on: ${formatDateLong(new Date())}`, 40, 98);
+    doc.setTextColor(0);
+
+    // --- Staff information ---
+    let y = 124;
+    doc.setFontSize(11);
+    doc.setFont(undefined, "bold");
+    doc.text("Staff Information", 40, y);
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(10);
+
+    y += 16;
+    doc.text(`Staff Name: ${fullName}`, 40, y);
+    y += 14;
+    doc.text(`Staff ID: ${currentProfile?.staff_id || "\u2014"}`, 40, y);
+    y += 14;
+    doc.text(`Department: ${currentProfile?.department || "\u2014"}`, 40, y);
+    y += 14;
+    doc.text(`Position: ${currentProfile?.position || "\u2014"}`, 40, y);
+
+    // --- Attendance summary ---
+    y += 24;
+    doc.setFontSize(11);
+    doc.setFont(undefined, "bold");
+    doc.text("Attendance Summary", 40, y);
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(10);
+
+    y += 16;
+    doc.text(`Total Attendance Days: ${totalDays}`, 40, y);
+    y += 14;
+    doc.text(`Days Present: ${daysPresent}`, 40, y);
+    y += 14;
+    doc.text(`Attendance Rate: ${attendanceRate}%`, 40, y);
+    y += 14;
+    doc.text(`Total Hours Worked: ${totalHoursLabel}`, 40, y);
+    y += 14;
+    doc.text(`Average Hours Worked: ${avgHoursLabel}`, 40, y);
+
+    // --- Attendance table ---
+    const tableRows = rows.map((r) => {
+      const [yy, mm, dd] = r.attendance_date.split("-").map(Number);
+      const dateObj = new Date(yy, mm - 1, dd);
+      const checkIn = r.check_in ? new Date(r.check_in) : null;
+      const checkOut = r.check_out ? new Date(r.check_out) : null;
+      const status = attendanceStatusFor(checkIn);
+      const hours = checkIn ? formatDuration((checkOut || checkIn) - checkIn) : "0h 00m";
+
+      return [
+        formatDateShort(dateObj),
+        checkIn ? formatTimeShort(checkIn) : "\u2014\u2014",
+        checkOut ? formatTimeShort(checkOut) : "\u2014\u2014",
+        hours,
+        status,
+      ];
+    });
+
+    doc.autoTable({
+      startY: y + 20,
+      head: [["Date", "Check In", "Check Out", "Hours Worked", "Status"]],
+      body: tableRows.length ? tableRows : [["No records", "\u2014", "\u2014", "\u2014", "\u2014"]],
+      styles: { fontSize: 9, cellPadding: 5 },
+      headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+      margin: { left: 40, right: 40 },
+    });
+
+    const safeName = sanitizeFilenamePart(fullName);
+    doc.save(`Attendance_Report_${safeName}_${start}_to_${end}.pdf`);
   }
 
   /* ---------- Init ---------- */
@@ -440,6 +664,10 @@
     els.attendanceRateValue = document.getElementById("attendanceRateValue");
 
     els.activityTableBody = document.getElementById("activityTableBody");
+
+    els.downloadPdfBtn = document.getElementById("downloadPdfBtn");
+    els.pdfPeriodSelect = document.getElementById("pdfPeriodSelect");
+    els.pdfErrorAlert = document.getElementById("pdfErrorAlert");
 
     els.logoutLink = document.getElementById("logoutLink");
   }
@@ -473,7 +701,21 @@
 
     els.actionBtn.addEventListener("click", handleAttendanceAction);
 
-    // These don't block the check-in button from becoming usable.
+    // The PDF feature is wired up defensively: a problem here must never
+    // stop the core attendance flow (stats + Recent Activity) below from
+    // loading. This is exactly the bug that was happening before — an
+    // undefined `handlePdfExport` threw here and killed everything after it.
+    try {
+      if (els.downloadPdfBtn) {
+        els.downloadPdfBtn.addEventListener("click", handlePdfExport);
+      }
+    } catch (err) {
+      console.error("[VSAS] Failed to initialize PDF export:", err);
+      showPdfError("PDF export is currently unavailable.");
+    }
+
+    // These don't block the check-in button from becoming usable, and a
+    // failure in any one of them doesn't stop the others.
     loadPersonalStats();
     loadCompanyTodaySummary();
     loadRecentActivity();

@@ -53,7 +53,7 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !ANON_KEY) {
 const AVATAR_BUCKET = "avatars";
 const ALLOWED_AVATAR_TYPES = new Set(["image/jpeg", "image/png"]);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2MB
-const VALID_ROLES = new Set(["admin", "hr", "manager", "staff"]);
+const VALID_ROLES = new Set(["admin", "hr", "manager", "ceo", "staff"]);
 
 // --------------------------------------------------------------------------
 // Small helpers

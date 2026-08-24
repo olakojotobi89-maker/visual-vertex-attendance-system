@@ -42,8 +42,6 @@ min_password_length = 8
 # Edge Functions runtime configuration
 enabled = true
 policy_area = "per_function"
-# Enable importing from npm via esm.sh / npm specifiers
-import_map = "./supabase/functions/import_map.json"
 
 [edge_runtime.deno]
 # For local development, use the latest stable Deno version
@@ -62,6 +60,10 @@ enabled = true
 entrypoint = "./create-staff/index.ts"
 # Environment variables (secrets) are managed via `supabase secrets set`
 # and are NOT stored in this config file.
+
+[functions."manage-vsas"]
+enabled = true
+entrypoint = "./manage-vsas/index.ts"
 
 [api]
 enabled = true

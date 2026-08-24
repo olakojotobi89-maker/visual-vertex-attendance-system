@@ -14,7 +14,6 @@
 --      individual rows) so any signed-in staff member can show a
 --      company-wide "checked in today" summary on their own dashboard
 --      without being able to see who specifically is checked in.
---
 -- Safe to run multiple times — every statement is idempotent.
 -- -----------------------------------------------------------------------
 

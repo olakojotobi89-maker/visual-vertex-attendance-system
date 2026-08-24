@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="..//style.css" />
-  <link rel="stylesheet" href="../css/dashboard.css" />
-  <link rel="stylesheet" href="../css/responsive.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
   <style>
     .announcement-card {
       background-color: var(--white);
@@ -56,7 +56,7 @@
         <button class="sidebar-toggle" id="sidebarToggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
         </button>
-        <a href="../index.html" class="brand"><span class="brand-mark"><img src="../images/logo.png" alt="Visual Vertex Technology Company Logo" class="company-logo"></span><span class="brand-name">Visual Vertex<span class="brand-name-sub">Technology Company</span></span></a>
+        <a href="index.html" class="brand"><span class="brand-mark"><img src="images/logo.png" alt="Visual Vertex Technology Company Logo" class="company-logo"></span><span class="brand-name">Visual Vertex<span class="brand-name-sub">Technology Company</span></span></a>
       </div>
       <div class="app-topbar-right">
         <div class="notification-wrap">
@@ -74,7 +74,7 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <!-- ===================== SIDEBAR ===================== -->
     <aside class="sidebar" id="sidebar" aria-label="Main navigation">
-      <div class="sidebar-brand"><img src="../images/logo.png" alt="Visual Vertex Technology Company Logo" class="company-logo"><span class="sidebar-brand-name">Visual Vertex<small>Technology Company</small></span></div>
+      <div class="sidebar-brand"><img src="images/logo.png" alt="Visual Vertex Technology Company Logo" class="company-logo"><span class="sidebar-brand-name">Visual Vertex<small>Technology Company</small></span></div>
       <nav class="sidebar-nav">
         <a href="dashboard.html" class="sidebar-link"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>Dashboard</a>
         <a href="attendance.html" class="sidebar-link"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 12.5l2 2 4-4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.25" stroke="currentColor" stroke-width="1.5"/></svg>Attendance</a>
@@ -94,6 +94,14 @@
         <p style="color: var(--muted);">Latest updates and news from Visual Vertex.</p>
       </div>
 
+      <form id="announcementForm" class="toolbar" hidden>
+        <input id="announcementTitle" class="toolbar-select" placeholder="Announcement title" required>
+        <input id="announcementCategory" class="toolbar-select" placeholder="Category">
+        <textarea id="announcementContent" class="toolbar-select" placeholder="Announcement content" required></textarea>
+        <label><input id="announcementPublish" type="checkbox"> Publish now</label>
+        <button class="btn-add-staff" type="submit">Save Announcement</button>
+      </form>
+
       <div id="announcementsList">
         <!-- Announcements will be injected here by announcements.js -->
         <div class="announcement-card">
@@ -104,9 +112,10 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../js/supabase.js"></script>
-  <script src="../js/auth.js"></script>
-  <script src="../js/main.js"></script>
-  <script src="../js/announcements.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/announcements.js"></script>
+  <script src="js/notifications.js"></script>
 </body>
 </html>

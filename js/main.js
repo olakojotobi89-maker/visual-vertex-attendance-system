@@ -14,9 +14,18 @@
   function initSidebar() {
     var toggleBtn = document.getElementById("sidebarToggle");
     var sidebar = document.getElementById("sidebar");
-    var overlay = document.getElementById("sidebarOverlay");
+    var shell = document.getElementById("dashboardShell");
+    var overlay = document.getElementById("sidebarOverlay") || document.getElementById("sidebarBackdrop");
 
-    if (!toggleBtn || !sidebar || !overlay) return;
+    if (!toggleBtn || !sidebar) return;
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "sidebarBackdrop";
+      overlay.className = "sidebar-backdrop";
+      document.body.appendChild(overlay);
+    }
+
+    function isMobile() { return window.innerWidth <= 720; }
 
     function openSidebar() {
       sidebar.classList.add("is-open");
@@ -33,11 +42,15 @@
     }
 
     toggleBtn.addEventListener("click", function () {
-      var isOpen = sidebar.classList.contains("is-open");
-      if (isOpen) {
-        closeSidebar();
+      if (isMobile()) {
+        if (sidebar.classList.contains("is-open")) closeSidebar();
+        else openSidebar();
       } else {
-        openSidebar();
+        closeSidebar();
+        if (shell) {
+          shell.classList.toggle("is-collapsed");
+          shell.classList.toggle("is-expanded");
+        }
       }
     });
 
@@ -50,7 +63,11 @@
     // If the viewport grows into the desktop rail layout, make sure the
     // mobile-only open state doesn't linger and lock scrolling.
     window.addEventListener("resize", function () {
-      if (window.innerWidth >= 900) closeSidebar();
+      if (!isMobile()) closeSidebar();
+    });
+
+    sidebar.querySelectorAll("a").forEach(function (link) {
+      link.addEventListener("click", function () { if (isMobile()) closeSidebar(); });
     });
   }
 

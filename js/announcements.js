@@ -99,6 +99,26 @@
     if (!auth) return;
     currentUser = auth.user;
     currentProfile = auth.profile;
+    const canManage = ["admin", "hr", "manager", "ceo"].includes(String(currentProfile.role).toLowerCase());
+    const form = document.getElementById("announcementForm");
+    if (form && canManage) {
+      form.hidden = false;
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const { error } = await window.supabaseClient.functions.invoke("manage-vsas", {
+          body: {
+            action: "announcement_save",
+            title: document.getElementById("announcementTitle").value,
+            category: document.getElementById("announcementCategory").value,
+            content: document.getElementById("announcementContent").value,
+            is_published: document.getElementById("announcementPublish").checked,
+          },
+        });
+        if (error) { alert(error.message || "Could not save announcement."); return; }
+        form.reset();
+        loadAnnouncements();
+      });
+    }
     renderProfile();
     if (els.logoutLink) {
       els.logoutLink.addEventListener("click", (e) => { e.preventDefault(); window.VSASAuth.logout(); });

@@ -118,89 +118,6 @@ function renderAdminHeader(profile) {
 /* ------------------------------------------------------------------ */
 
 function wireLayoutEvents() {
-  const shell = document.getElementById("dashboardShell");
-  const sidebar = document.getElementById("sidebar");
-  const toggleBtn = document.getElementById("sidebarToggle");
-
-  if (!shell) {
-    console.error("[VSAS] #dashboardShell was not found.");
-  }
-
-  if (!sidebar) {
-    console.error("[VSAS] #sidebar was not found.");
-  }
-
-  if (!toggleBtn) {
-    console.error("[VSAS] #sidebarToggle was not found.");
-  }
-
-  /*
-   * IMPORTANT:
-   *
-   * Mobile:
-   *   .sidebar.is-open
-   *
-   * Desktop:
-   *   .dashboard-shell.is-collapsed
-   *   .dashboard-shell.is-expanded
-   *
-   * We intentionally keep these state names consistent with the existing
-   * application instead of introducing another sidebar state system.
-   */
-  if (toggleBtn && sidebar && shell) {
-    toggleBtn.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const isMobile = window.innerWidth <= 720;
-
-      if (isMobile) {
-        // Mobile uses the sidebar itself as the open/close state.
-        sidebar.classList.toggle("is-open");
-
-        // Prevent the desktop shell state from interfering with mobile.
-        shell.classList.remove("is-collapsed");
-        shell.classList.remove("is-expanded");
-
-        return;
-      }
-
-      // Desktop keeps the existing collapsed/expanded shell behavior.
-      sidebar.classList.remove("is-open");
-
-      shell.classList.toggle("is-collapsed");
-      shell.classList.toggle("is-expanded");
-    });
-
-    /*
-     * If the user resizes from mobile to desktop while the mobile sidebar
-     * is open, clean up the mobile state.
-     */
-    window.addEventListener("resize", () => {
-      if (window.innerWidth > 720) {
-        sidebar.classList.remove("is-open");
-      }
-    });
-  }
-
-  /*
-   * Mobile usability:
-   *
-   * If the sidebar contains navigation links and the user selects one,
-   * close the mobile sidebar before navigation occurs.
-   *
-   * This does not interfere with desktop behavior.
-   */
-  if (sidebar) {
-    sidebar.querySelectorAll("a").forEach((link) => {
-      link.addEventListener("click", () => {
-        if (window.innerWidth <= 720) {
-          sidebar.classList.remove("is-open");
-        }
-      });
-    });
-  }
-
   const logoutBtn = document.getElementById("logoutBtn");
 
   if (logoutBtn) {
@@ -1151,24 +1068,15 @@ async function deleteStaff(staff) {
      * This prevents us from treating a zero-row DELETE as a successful
      * deletion.
      */
-    const {
-      data: deletedRows,
-      error,
-    } = await window.supabaseClient
-      .from("profiles")
-      .delete()
-      .eq("id", staff.id)
-      .select("id");
+    const { data: deletionResult, error } = await window.supabaseClient.functions.invoke(
+      "manage-vsas",
+      { body: { action: "delete_staff", id: staff.id } }
+    );
 
-    if (error) {
-      throw error;
-    }
+    if (error || deletionResult?.deleted !== staff.id) throw error || new Error("Supabase did not confirm deletion.");
 
-    const deletedCount = Array.isArray(
-      deletedRows
-    )
-      ? deletedRows.length
-      : 0;
+    const deletedCount = 1;
+    const deletedRows = [{ id: staff.id }];
 
     /*
      * If zero rows came back, we cannot claim the database deletion

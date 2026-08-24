@@ -95,6 +95,7 @@ create table if not exists public.notifications (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+alter table public.notifications add column if not exists category text;
 create table if not exists public.notification_recipients (
   notification_id uuid not null references public.notifications(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,

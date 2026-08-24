@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     const title = String(body.title ?? '').trim(), text = String(body.body ?? '').trim();
     const targetType = String(body.target_type ?? 'all');
     if (!title || !text || !['all','department','selected'].includes(targetType)) return errorResponse(400, 'Notification details are invalid.');
-    const { data: notification, error } = await admin.from('notifications').insert({ title, body: text, target_type: targetType, department_id: body.department_id || null, status: 'published', published_at: new Date().toISOString(), created_by: user.id }).select('id').single();
+    const { data: notification, error } = await admin.from('notifications').insert({ title, body: text, category: String(body.category ?? '').trim() || null, target_type: targetType, department_id: body.department_id || null, status: 'published', published_at: new Date().toISOString(), created_by: user.id }).select('id').single();
     if (error) return errorResponse(400, error.message);
     let recipients: string[] = Array.isArray(body.user_ids) ? body.user_ids.map(String) : [];
     if (targetType === 'all' || targetType === 'department') {

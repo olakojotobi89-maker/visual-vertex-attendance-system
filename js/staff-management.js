@@ -416,6 +416,15 @@ function applyPipeline() {
 /* ------------------------------------------------------------------ */
 
 function wireToolbarEvents() {
+  const openNotificationBtn = document.getElementById("openNotificationBtn");
+  const notificationModal = document.getElementById("notificationModal");
+  const closeNotification = () => notificationModal?.classList.remove("is-open");
+  if (openNotificationBtn && notificationModal) openNotificationBtn.addEventListener("click", () => notificationModal.classList.add("is-open"));
+  document.getElementById("closeNotificationBtn")?.addEventListener("click", closeNotification);
+  document.getElementById("cancelNotificationBtn")?.addEventListener("click", closeNotification);
+  notificationModal?.addEventListener("click", (event) => { if (event.target === notificationModal) closeNotification(); });
+  document.getElementById("notificationForm")?.addEventListener("submit", handleNotificationSubmit);
+
   const searchInput = document.getElementById("searchInput");
 
   if (searchInput) {
@@ -2389,4 +2398,30 @@ function escapeHtml(value) {
       /'/g,
       "&#039;"
     );
+}
+
+async function handleNotificationSubmit(event) {
+  event.preventDefault();
+  const button = document.getElementById("sendNotificationBtn");
+  const alertBox = document.getElementById("notificationAlert");
+  const showError = (message) => { if (alertBox) { alertBox.textContent = message; alertBox.style.display = "flex"; } };
+  if (button) { button.disabled = true; button.dataset.loading = "true"; }
+  if (alertBox) alertBox.style.display = "none";
+  try {
+    const { data, error } = await window.supabaseClient.functions.invoke("manage-vsas", { body: {
+      action: "notification_publish",
+      title: document.getElementById("notificationTitle").value.trim(),
+      body: document.getElementById("notificationBody").value.trim(),
+      category: document.getElementById("notificationType").value,
+      target_type: "all",
+    }});
+    if (error) throw error;
+    if (!data?.notification_id) throw new Error("The server did not confirm the notification.");
+    document.getElementById("notificationForm").reset();
+    document.getElementById("notificationModal")?.classList.remove("is-open");
+    showToast("Notification sent to all active staff.", "success");
+  } catch (error) {
+    console.error("[VSAS] Notification publish failed:", error);
+    showError(error?.message || "Could not send notification. Please try again.");
+  } finally { if (button) { button.disabled = false; button.dataset.loading = "false"; } }
 }

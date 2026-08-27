@@ -205,7 +205,7 @@ button:focus-visible {
 }
 
 .company-logo {
-  height: clamp(28px, 6vw, 38px);
+  height: clamp(auto, 6vw, 38px);
   width: auto;
   max-width: 160px;
   object-fit: contain;

@@ -83,7 +83,7 @@
     function openPanel() {
       panel.classList.add("is-open");
       bell.setAttribute("aria-expanded", "true");
-      if (dot) dot.style.display = "none"; // mark as "read" once opened
+      // Opening the panel does not change recipient read state.
     }
 
     function closePanel() {

@@ -715,3 +715,15 @@
     transform: translateY(0);
   }
 }
+
+.notification-item--unread {
+  background-color: var(--primary-tint);
+  font-weight: 500;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.notification-item--unread strong { color: var(--black); }

@@ -3,104 +3,276 @@
 
   let channel = null;
   let userId = null;
-
-  /* =========================================================
-     HELPERS
-  ========================================================= */
+  let initialized = false;
 
   const esc = (v) =>
-    String(v ?? "").replace(
-      /[&<>"']/g,
-      (c) =>
-        ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#039;"
-        })[c]
-    );
+    String(v ?? "").replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[c]));
 
   const age = (v) => {
-    if (!v) return "";
+    if (!v) return "Just now";
 
-    const date = new Date(v);
-
-    if (Number.isNaN(date.getTime())) return "";
-
-    const s = Math.max(
+    const seconds = Math.max(
       0,
-      (Date.now() - date.getTime()) / 1000
+      (Date.now() - new Date(v).getTime()) / 1000
     );
 
-    return s < 60
-      ? `${Math.floor(s)}s ago`
-      : s < 3600
-      ? `${Math.floor(s / 60)}m ago`
-      : s < 86400
-      ? `${Math.floor(s / 3600)}h ago`
-      : `${Math.floor(s / 86400)}d ago`;
+    if (seconds < 60) return `${Math.floor(seconds)}s ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+
+    return `${Math.floor(seconds / 86400)}d ago`;
   };
 
-
-  /* =========================================================
+  /* ============================================================
      NOTIFICATION SOUND
-  ========================================================= */
+     ============================================================ */
 
-  function sound() {
+  function playNotificationSound() {
     try {
-      const C =
-        window.AudioContext ||
-        window.webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext || window.webkitAudioContext;
 
-      if (!C) return;
+      if (!AudioCtx) return;
 
-      const x = new C();
-      const t = x.currentTime;
+      const audio = new AudioCtx();
 
-      [660, 880].forEach((f, i) => {
-        const o = x.createOscillator();
-        const g = x.createGain();
+      if (audio.state === "suspended") {
+        audio.resume().catch(() => {});
+      }
 
-        const n = t + i * 0.1;
+      const now = audio.currentTime;
 
-        o.type = "sine";
-        o.frequency.value = f;
+      const tones = [
+        { frequency: 660, start: 0 },
+        { frequency: 880, start: 0.12 }
+      ];
 
-        g.gain.setValueAtTime(0.0001, n);
+      tones.forEach((tone) => {
+        const oscillator = audio.createOscillator();
+        const gain = audio.createGain();
 
-        g.gain.exponentialRampToValueAtTime(
-          0.07,
-          n + 0.02
-        );
+        oscillator.type = "sine";
+        oscillator.frequency.value = tone.frequency;
 
-        g.gain.exponentialRampToValueAtTime(
-          0.0001,
-          n + 0.2
-        );
+        const start = now + tone.start;
 
-        o.connect(g).connect(x.destination);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.08, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
 
-        o.start(n);
-        o.stop(n + 0.22);
+        oscillator.connect(gain);
+        gain.connect(audio.destination);
+
+        oscillator.start(start);
+        oscillator.stop(start + 0.24);
       });
 
       setTimeout(() => {
         try {
-          x.close();
+          audio.close();
         } catch (_) {}
-      }, 600);
+      }, 700);
 
     } catch (_) {}
   }
 
+  /* ============================================================
+     NOTIFICATION POPUP
+     ============================================================ */
 
-  /* =========================================================
-     LOAD NOTIFICATIONS
-  ========================================================= */
+  function ensurePopupContainer() {
+    let container = document.getElementById("vsasNotificationPopups");
 
-  async function load(playSound = false) {
+    if (container) return container;
 
+    container = document.createElement("div");
+    container.id = "vsasNotificationPopups";
+
+    container.style.position = "fixed";
+    container.style.top = "80px";
+    container.style.right = "24px";
+    container.style.width = "min(390px, calc(100vw - 32px))";
+    container.style.zIndex = "99999";
+    container.style.display = "flex";
+    container.style.flexDirection = "column";
+    container.style.gap = "12px";
+    container.style.pointerEvents = "none";
+
+    document.body.appendChild(container);
+
+    return container;
+  }
+
+  function showNotificationPopup(notification) {
+    if (!notification) return;
+
+    const container = ensurePopupContainer();
+
+    const title = notification.title || "New Notification";
+    const body = notification.body || "";
+    const category = notification.category || "General";
+
+    const popup = document.createElement("div");
+
+    popup.style.pointerEvents = "auto";
+    popup.style.background = "#ffffff";
+    popup.style.border = "1px solid rgba(0,0,0,.08)";
+    popup.style.borderRadius = "16px";
+    popup.style.padding = "18px";
+    popup.style.boxShadow = "0 18px 50px rgba(0,0,0,.18)";
+    popup.style.fontFamily = "Poppins, sans-serif";
+    popup.style.transform = "translateX(120%)";
+    popup.style.opacity = "0";
+    popup.style.transition =
+      "transform .35s ease, opacity .35s ease";
+
+    popup.innerHTML = `
+      <div style="
+        display:flex;
+        align-items:flex-start;
+        gap:12px;
+      ">
+
+        <div style="
+          width:42px;
+          height:42px;
+          min-width:42px;
+          border-radius:50%;
+          background:#fff0f0;
+          color:#ef3333;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+        ">
+          <svg
+            viewBox="0 0 24 24"
+            width="21"
+            height="21"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
+            <path
+              d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9Z"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M13.73 21a2 2 0 0 1-3.46 0"
+              stroke-linecap="round"
+            />
+          </svg>
+        </div>
+
+        <div style="flex:1;min-width:0;">
+
+          <div style="
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+          ">
+
+            <strong style="
+              font-size:15px;
+              color:#171717;
+              line-height:1.35;
+            ">
+              ${esc(title)}
+            </strong>
+
+            <button
+              type="button"
+              class="vsas-popup-close"
+              aria-label="Close notification"
+              style="
+                border:0;
+                background:none;
+                cursor:pointer;
+                color:#777;
+                font-size:20px;
+                line-height:1;
+                padding:0;
+              "
+            >
+              ×
+            </button>
+
+          </div>
+
+          <div style="
+            margin-top:5px;
+            font-size:11px;
+            font-weight:600;
+            color:#ef3333;
+            text-transform:uppercase;
+            letter-spacing:.04em;
+          ">
+            ${esc(category)}
+          </div>
+
+          <div style="
+            margin-top:8px;
+            color:#555;
+            font-size:13px;
+            line-height:1.55;
+            white-space:pre-wrap;
+            word-break:break-word;
+          ">
+            ${esc(body)}
+          </div>
+
+          <div style="
+            margin-top:10px;
+            color:#999;
+            font-size:11px;
+          ">
+            Just now
+          </div>
+
+        </div>
+      </div>
+    `;
+
+    container.appendChild(popup);
+
+    requestAnimationFrame(() => {
+      popup.style.transform = "translateX(0)";
+      popup.style.opacity = "1";
+    });
+
+    const closePopup = () => {
+      popup.style.transform = "translateX(120%)";
+      popup.style.opacity = "0";
+
+      setTimeout(() => {
+        popup.remove();
+      }, 350);
+    };
+
+    const closeButton = popup.querySelector(".vsas-popup-close");
+
+    if (closeButton) {
+      closeButton.addEventListener("click", closePopup);
+    }
+
+    /*
+     * Automatically disappear after 8 seconds.
+     */
+    setTimeout(closePopup, 8000);
+  }
+
+  /* ============================================================
+     NOTIFICATION LIST
+     ============================================================ */
+
+  async function loadNotifications(playSound = false) {
     const list =
       document.getElementById("notificationList") ||
       document.getElementById("notificationsList");
@@ -121,8 +293,7 @@
           title,
           body,
           category,
-          published_at,
-          status
+          published_at
         )
       `)
       .eq("user_id", userId)
@@ -133,62 +304,39 @@
       .limit(50);
 
     if (error) {
-      console.error(
-        "Notification loading error:",
-        error
-      );
-
+      console.error("Notification loading error:", error);
       list.innerHTML =
         '<p class="notification-item">Could not load notifications.</p>';
-
       return;
     }
 
     const rows = data || [];
 
     const unread = rows.filter(
-      (r) => !r.read_at
+      (row) => !row.read_at
     ).length;
 
-    const dot =
-      document.getElementById("notificationDot");
-
-    if (dot) {
-      dot.style.display =
-        unread > 0 ? "block" : "none";
-    }
-
-
-    /* ---------------------------------------------------------
-       Empty state
-    --------------------------------------------------------- */
+    updateNotificationDots(unread);
 
     if (!rows.length) {
       list.innerHTML =
         '<p class="notification-item">No new notifications.</p>';
-
       return;
     }
 
-
-    /* ---------------------------------------------------------
-       Render notifications
-    --------------------------------------------------------- */
-
     list.innerHTML = rows
-      .map((r) => {
-
-        const n = r.notifications || {};
+      .map((row) => {
+        const notification = row.notifications || {};
 
         return `
           <button
             type="button"
             class="notification-item${
-              r.read_at
+              row.read_at
                 ? ""
                 : " notification-item--unread"
             }"
-            data-id="${esc(r.notification_id)}"
+            data-id="${esc(row.notification_id)}"
             role="menuitem"
           >
 
@@ -196,32 +344,24 @@
 
             <span>
               <strong>
-                ${esc(
-                  n.title ||
-                  "Notification"
-                )}
+                ${esc(notification.title || "Notification")}
               </strong>
 
               <br>
 
-              ${esc(n.body || "")}
+              ${esc(notification.body || "")}
 
               <br>
 
               <time>
+                ${esc(notification.category || "General")}
+                ·
                 ${esc(
-                  n.category ||
-                  "General"
+                  age(
+                    notification.published_at ||
+                    row.created_at
+                  )
                 )}
-                ${
-                  n.published_at
-                    ? ` · ${esc(
-                        age(
-                          n.published_at
-                        )
-                      )}`
-                    : ""
-                }
               </time>
             </span>
 
@@ -230,760 +370,254 @@
       })
       .join("");
 
-
-    /* ---------------------------------------------------------
-       Mark notification as read
-    --------------------------------------------------------- */
-
     list
       .querySelectorAll("[data-id]")
       .forEach((item) => {
+        item.addEventListener("click", async () => {
 
-        item.addEventListener(
-          "click",
-          async () => {
+          await window.supabaseClient
+            .from("notification_recipients")
+            .update({
+              read_at: new Date().toISOString()
+            })
+            .eq(
+              "notification_id",
+              item.dataset.id
+            )
+            .eq("user_id", userId);
 
-            const notificationId =
-              item.dataset.id;
-
-            const {
-              error
-            } = await window.supabaseClient
-              .from(
-                "notification_recipients"
-              )
-              .update({
-                read_at:
-                  new Date().toISOString()
-              })
-              .eq(
-                "notification_id",
-                notificationId
-              )
-              .eq(
-                "user_id",
-                userId
-              );
-
-            if (error) {
-              console.error(
-                "Could not mark notification as read:",
-                error
-              );
-
-              return;
-            }
-
-            await load(false);
-          }
-        );
+          await loadNotifications(false);
+        });
       });
 
-
     if (playSound) {
-      sound();
+      playNotificationSound();
     }
   }
 
+  /* ============================================================
+     NOTIFICATION DOT
+     ============================================================ */
 
-  /* =========================================================
-     SEND NOTIFICATION TO ALL STAFF
-  ========================================================= */
+  function updateNotificationDots(unread) {
+    const dots = document.querySelectorAll(
+      ".notif-dot, #notificationDot"
+    );
 
-  async function sendNotificationToAllStaff(
-    title,
-    message,
-    type
-  ) {
+    dots.forEach((dot) => {
+      dot.style.display = unread > 0
+        ? "block"
+        : "none";
+    });
+  }
 
-    if (!window.supabaseClient) {
-      throw new Error(
-        "Supabase client is not available."
-      );
-    }
+  /* ============================================================
+     GET THE NEW NOTIFICATION
+     ============================================================ */
 
-
-    /* ---------------------------------------------------------
-       Validate
-    --------------------------------------------------------- */
-
-    title = String(title || "").trim();
-    message = String(message || "").trim();
-    type = String(type || "General").trim();
-
-
-    if (!title) {
-      throw new Error(
-        "Please enter a notification title."
-      );
-    }
-
-
-    if (!message) {
-      throw new Error(
-        "Please enter a notification message."
-      );
-    }
-
-
-    if (
-      ![
-        "General",
-        "Announcement",
-        "Urgent"
-      ].includes(type)
-    ) {
-      type = "General";
-    }
-
-
-    /* ---------------------------------------------------------
-       Call secure Supabase RPC
-    --------------------------------------------------------- */
+  async function getNotification(notificationId) {
+    if (!notificationId) return null;
 
     const {
       data,
       error
-    } = await window.supabaseClient.rpc(
-      "send_notification_to_all_staff",
-      {
-        p_title: title,
-        p_body: message,
-        p_category: type
-      }
-    );
-
+    } = await window.supabaseClient
+      .from("notifications")
+      .select(`
+        id,
+        title,
+        body,
+        category,
+        published_at,
+        status
+      `)
+      .eq("id", notificationId)
+      .maybeSingle();
 
     if (error) {
       console.error(
-        "Send notification error:",
+        "Could not fetch notification:",
         error
       );
 
-      throw new Error(
-        error.message ||
-        "Unable to send notification."
-      );
+      return null;
     }
 
-
-    return data;
+    return data || null;
   }
 
+  /* ============================================================
+     REALTIME
+     ============================================================ */
 
-  /* =========================================================
-     FIND NOTIFICATION MODAL
-  ========================================================= */
+  function subscribeToNotifications() {
+    if (!userId || !window.supabaseClient) return;
 
-  function getNotificationModal() {
-
-    /*
-      We intentionally don't depend on one specific modal ID.
-
-      This allows the code to work with your existing UI.
-    */
-
-    const candidates = [
-      "#notifyAllModal",
-      "#notificationModal",
-      "#notifyModal",
-      ".notify-all-modal",
-      ".notification-modal"
-    ];
-
-    for (const selector of candidates) {
-
-      const element =
-        document.querySelector(selector);
-
-      if (element) {
-        return element;
-      }
-    }
-
-
-    /*
-      Fallback:
-      Find a visible element containing
-      "Notify All Staff".
-    */
-
-    const elements =
-      document.querySelectorAll(
-        "div, section, dialog"
-      );
-
-    for (const element of elements) {
-
-      if (
-        element.textContent
-          ?.trim()
-          .includes("Notify All Staff")
-      ) {
-
-        const style =
-          window.getComputedStyle(element);
-
-        if (
-          style.display !== "none" &&
-          style.visibility !== "hidden"
-        ) {
-          return element;
-        }
-      }
-    }
-
-    return null;
-  }
-
-
-  /* =========================================================
-     FIND MODAL FIELDS
-  ========================================================= */
-
-  function getNotificationFields(modal) {
-
-    if (!modal) return null;
-
-
-    /*
-      First try common IDs.
-    */
-
-    const title =
-      modal.querySelector(
-        "#notificationTitle"
-      ) ||
-      modal.querySelector(
-        "#notifyTitle"
-      ) ||
-      modal.querySelector(
-        'input[name="title"]'
-      );
-
-
-    const message =
-      modal.querySelector(
-        "#notificationMessage"
-      ) ||
-      modal.querySelector(
-        "#notifyMessage"
-      ) ||
-      modal.querySelector(
-        'textarea[name="message"]'
-      );
-
-
-    const type =
-      modal.querySelector(
-        "#notificationType"
-      ) ||
-      modal.querySelector(
-        "#notifyType"
-      ) ||
-      modal.querySelector(
-        'select[name="type"]'
-      );
-
-
-    /*
-      If IDs/names don't exist, use the
-      visible input structure in your modal.
-    */
-
-    const inputs =
-      modal.querySelectorAll(
-        "input, textarea, select"
-      );
-
-
-    let fallbackTitle = title;
-    let fallbackMessage = message;
-    let fallbackType = type;
-
-
-    if (!fallbackTitle) {
-
-      fallbackTitle =
-        Array.from(inputs).find(
-          (el) =>
-            el.tagName === "INPUT" &&
-            el.type !== "hidden"
-        ) || null;
-    }
-
-
-    if (!fallbackMessage) {
-
-      fallbackMessage =
-        modal.querySelector(
-          "textarea"
-        ) || null;
-    }
-
-
-    if (!fallbackType) {
-
-      fallbackType =
-        modal.querySelector(
-          "select"
-        ) || null;
-    }
-
-
-    return {
-      title: fallbackTitle,
-      message: fallbackMessage,
-      type: fallbackType
-    };
-  }
-
-
-  /* =========================================================
-     SHOW SEND STATUS
-  ========================================================= */
-
-  function setSendButtonState(
-    button,
-    sending
-  ) {
-
-    if (!button) return;
-
-
-    if (sending) {
-
-      if (
-        !button.dataset.originalText
-      ) {
-        button.dataset.originalText =
-          button.textContent;
-      }
-
-      button.disabled = true;
-
-      button.textContent =
-        "Sending...";
-    }
-
-    else {
-
-      button.disabled = false;
-
-      if (
-        button.dataset.originalText
-      ) {
-        button.textContent =
-          button.dataset.originalText;
-      }
-    }
-  }
-
-
-  /* =========================================================
-     SEND BUTTON HANDLER
-  ========================================================= */
-
-  async function handleSendToAllStaff(
-    button
-  ) {
-
-    const modal =
-      getNotificationModal();
-
-    if (!modal) {
-
-      console.error(
-        "Notification modal could not be found."
-      );
-
-      alert(
-        "Notification window could not be found."
-      );
-
-      return;
-    }
-
-
-    const fields =
-      getNotificationFields(modal);
-
-
-    if (
-      !fields ||
-      !fields.title ||
-      !fields.message
-    ) {
-
-      console.error(
-        "Notification fields could not be found."
-      );
-
-      alert(
-        "Notification form fields could not be found."
-      );
-
-      return;
-    }
-
-
-    const title =
-      fields.title.value.trim();
-
-    const message =
-      fields.message.value.trim();
-
-    const type =
-      fields.type?.value ||
-      "General";
-
-
-    /* ---------------------------------------------------------
-       Confirm empty fields
-    --------------------------------------------------------- */
-
-    if (!title) {
-
-      alert(
-        "Please enter a notification title."
-      );
-
-      fields.title.focus();
-
-      return;
-    }
-
-
-    if (!message) {
-
-      alert(
-        "Please enter a notification message."
-      );
-
-      fields.message.focus();
-
-      return;
-    }
-
-
-    /* ---------------------------------------------------------
-       Send
-    --------------------------------------------------------- */
-
-    setSendButtonState(
-      button,
-      true
-    );
-
-
-    try {
-
-      const notificationId =
-        await sendNotificationToAllStaff(
-          title,
-          message,
-          type
-        );
-
-
-      console.log(
-        "Notification sent successfully:",
-        notificationId
-      );
-
-
-      /*
-        Clear the form.
-      */
-
-      fields.title.value = "";
-
-      fields.message.value = "";
-
-      if (fields.type) {
-        fields.type.value =
-          "General";
-      }
-
-
-      /*
-        Close modal.
-
-        We try common close buttons first.
-      */
-
-      const closeButton =
-        modal.querySelector(
-          "[data-close]"
-        ) ||
-        modal.querySelector(
-          ".modal-close"
-        ) ||
-        modal.querySelector(
-          ".close-modal"
-        );
-
-
-      if (closeButton) {
-        closeButton.click();
-      }
-
-
-      /*
-        If your modal uses hidden/class-based
-        closing, try the common patterns.
-      */
-
-      modal.classList.remove(
-        "active",
-        "show",
-        "open"
-      );
-
-
-      modal.setAttribute(
-        "aria-hidden",
-        "true"
-      );
-
-
-      /*
-        Reload notifications.
-      */
-
-      await load(false);
-
-
-      /*
-        Success message.
-      */
-
-      alert(
-        "Notification sent successfully to all active staff."
-      );
-
-    }
-
-    catch (error) {
-
-      console.error(
-        error
-      );
-
-
-      alert(
-        error.message ||
-        "Failed to send notification."
-      );
-    }
-
-    finally {
-
-      setSendButtonState(
-        button,
-        false
-      );
-    }
-  }
-
-
-  /* =========================================================
-     DETECT "SEND TO ALL STAFF" BUTTON
-  ========================================================= */
-
-  document.addEventListener(
-    "click",
-    async (event) => {
-
-      const button =
-        event.target.closest(
-          "button"
-        );
-
-      if (!button) return;
-
-
-      const text =
-        button.textContent
-          ?.trim()
-          .toLowerCase();
-
-
-      /*
-        Match your exact button:
-
-        "Send to All Staff"
-      */
-
-      if (
-        text !==
-        "send to all staff"
-      ) {
-        return;
-      }
-
-
-      /*
-        Prevent any old handler from
-        submitting the form normally.
-      */
-
-      event.preventDefault();
-
-      event.stopPropagation();
-
-
-      await handleSendToAllStaff(
-        button
-      );
-    },
-    true
-  );
-
-
-  /* =========================================================
-     INITIALIZE
-  ========================================================= */
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    async () => {
-
+    if (channel) {
       try {
+        window.supabaseClient.removeChannel(channel);
+      } catch (_) {}
+    }
 
-        const auth =
-          await window.VSASAuth.requireAuth();
+    channel = window.supabaseClient
+      .channel(
+        `vsas-notifications-${userId}`
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notification_recipients",
+          filter: `user_id=eq.${userId}`
+        },
+        async (payload) => {
 
-        if (!auth) return;
+          console.log(
+            "🔔 New VSAS notification:",
+            payload
+          );
 
-        userId =
-          auth.user.id;
+          const notificationId =
+            payload?.new?.notification_id;
 
+          if (!notificationId) return;
 
-        /*
-          Initial notification load.
-        */
-
-        await load(false);
-
-
-        /* -----------------------------------------------------
-           Realtime notification listener
-        ----------------------------------------------------- */
-
-        channel =
-          window.supabaseClient
-            .channel(
-              `vsas-notifications:${userId}`
-            )
-            .on(
-              "postgres_changes",
-              {
-                event: "INSERT",
-                schema: "public",
-                table:
-                  "notification_recipients",
-                filter:
-                  `user_id=eq.${userId}`
-              },
-              async () => {
-
-                console.log(
-                  "New VSAS notification received."
-                );
-
-                await load(true);
-              }
-            )
-            .subscribe(
-              (status) => {
-
-                console.log(
-                  "Notification realtime status:",
-                  status
-                );
-              }
+          /*
+           * Get the actual notification
+           * from the notifications table.
+           */
+          const notification =
+            await getNotification(
+              notificationId
             );
 
-      }
+          if (!notification) {
+            await loadNotifications(false);
+            return;
+          }
 
-      catch (error) {
+          /*
+           * Immediately show popup.
+           */
+          showNotificationPopup(
+            notification
+          );
 
-        console.error(
-          "Notification initialization failed:",
-          error
+          /*
+           * Play notification sound.
+           */
+          playNotificationSound();
+
+          /*
+           * Refresh notification list
+           * and unread counter.
+           */
+          await loadNotifications(false);
+        }
+      )
+      .subscribe((status) => {
+
+        console.log(
+          "VSAS notification realtime:",
+          status
         );
+
+      });
+  }
+
+  /* ============================================================
+     ENABLE AUDIO AFTER USER INTERACTION
+     ============================================================ */
+
+  function enableNotificationAudio() {
+    document.addEventListener(
+      "click",
+      () => {
+        try {
+          const AudioCtx =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+          if (!AudioCtx) return;
+
+          const ctx = new AudioCtx();
+
+          if (ctx.state === "suspended") {
+            ctx.resume().catch(() => {});
+          }
+
+          setTimeout(() => {
+            try {
+              ctx.close();
+            } catch (_) {}
+          }, 200);
+
+        } catch (_) {}
+      },
+      {
+        once: true,
+        passive: true
       }
+    );
+  }
+
+  /* ============================================================
+     INITIALIZE
+     ============================================================ */
+
+  async function initialize() {
+    if (initialized) return;
+
+    initialized = true;
+
+    if (
+      !window.supabaseClient ||
+      !window.VSASAuth
+    ) {
+      console.error(
+        "VSAS notification dependencies are missing."
+      );
+      return;
     }
-  );
 
+    const auth =
+      await window.VSASAuth.requireAuth();
 
-  /* =========================================================
+    if (!auth) return;
+
+    userId = auth.user.id;
+
+    enableNotificationAudio();
+
+    await loadNotifications(false);
+
+    subscribeToNotifications();
+  }
+
+  /* ============================================================
      CLEANUP
-  ========================================================= */
+     ============================================================ */
 
   window.addEventListener(
     "beforeunload",
     () => {
-
       if (
         channel &&
         window.supabaseClient
       ) {
-
-        window.supabaseClient
-          .removeChannel(channel);
-
-        channel = null;
+        try {
+          window.supabaseClient.removeChannel(
+            channel
+          );
+        } catch (_) {}
       }
     }
   );
 
-
-  /* =========================================================
-     EXPOSE FUNCTIONS
-  ========================================================= */
-
-  window.VSASNotifications = {
-    load,
-    sendNotificationToAllStaff,
-    markAsRead: async (
-      notificationId
-    ) => {
-
-      if (!userId) return false;
-
-      const {
-        error
-      } = await window.supabaseClient
-        .from(
-          "notification_recipients"
-        )
-        .update({
-          read_at:
-            new Date().toISOString()
-        })
-        .eq(
-          "notification_id",
-          notificationId
-        )
-        .eq(
-          "user_id",
-          userId
-        );
-
-      if (error) {
-        console.error(
-          error
-        );
-
-        return false;
-      }
-
-      await load(false);
-
-      return true;
-    }
-  };
+  document.addEventListener(
+    "DOMContentLoaded",
+    initialize
+  );
 
 })();

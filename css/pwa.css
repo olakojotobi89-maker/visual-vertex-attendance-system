@@ -1,0 +1,109 @@
+/* =========================================================
+   VSAS — PWA install prompt
+   Scoped, additive styles for the "Install VSAS" card only.
+   Reuses the existing brand variables defined in style.css
+   (--primary, --white, --black, --muted, --border, --radius-*,
+   --shadow-*, --space-*) so it matches the current VSAS look
+   without introducing a new visual identity.
+   ========================================================= */
+
+.vsas-install-toast {
+  position: fixed;
+  right: var(--space-sm, 1rem);
+  bottom: var(--space-sm, 1rem);
+  left: auto;
+  width: min(360px, calc(100vw - 2rem));
+  background-color: var(--white, #fff);
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: var(--radius-md, 16px);
+  box-shadow: var(--shadow-lg, 0 24px 60px rgba(17, 17, 17, 0.12));
+  padding: var(--space-sm, 1rem);
+  z-index: 99999;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  animation: vsas-install-toast-in 0.25s ease;
+}
+
+.vsas-install-toast[hidden] {
+  display: none;
+}
+
+@keyframes vsas-install-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vsas-install-toast__icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm, 10px);
+  background-color: var(--primary-tint, #fdeaea);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.vsas-install-toast__icon img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.vsas-install-toast__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.vsas-install-toast__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--black, #111);
+}
+
+.vsas-install-toast__text {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--muted, #7a7a7a);
+}
+
+.vsas-install-toast__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.vsas-install-toast__close {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: var(--muted, #7a7a7a);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.15rem;
+  border-radius: 6px;
+}
+
+.vsas-install-toast__close:hover {
+  color: var(--black, #111);
+}
+
+@media (max-width: 480px) {
+  .vsas-install-toast {
+    right: var(--space-xs, 0.5rem);
+    left: var(--space-xs, 0.5rem);
+    bottom: var(--space-xs, 0.5rem);
+    width: auto;
+  }
+}

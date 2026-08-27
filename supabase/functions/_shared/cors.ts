@@ -7,7 +7,7 @@
 //      "Access-Control-Allow-Origin": "https://vsas.yourcompany.com"
 // -----------------------------------------------------------------------
 
-const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") || "http://localhost:5500";
+const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") || "*";
 
 export const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": allowedOrigin,

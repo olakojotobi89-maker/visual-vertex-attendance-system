@@ -424,6 +424,12 @@ function wireToolbarEvents() {
   document.getElementById("cancelNotificationBtn")?.addEventListener("click", closeNotification);
   notificationModal?.addEventListener("click", (event) => { if (event.target === notificationModal) closeNotification(); });
   document.getElementById("notificationForm")?.addEventListener("submit", handleNotificationSubmit);
+  const editModal = document.getElementById("editStaffModal");
+  const closeEdit = () => editModal?.classList.remove("is-open");
+  document.getElementById("closeEditStaffBtn")?.addEventListener("click", closeEdit);
+  document.getElementById("cancelEditStaffBtn")?.addEventListener("click", closeEdit);
+  editModal?.addEventListener("click", (event) => { if (event.target === editModal) closeEdit(); });
+  document.getElementById("editStaffForm")?.addEventListener("submit", handleEditStaffSubmit);
 
   const searchInput = document.getElementById("searchInput");
 
@@ -893,11 +899,45 @@ function viewStaff(staff) {
 }
 
 function editStaff(staff) {
-  alert(
-    `Edit for ${
-      staff.first_name || "this staff member"
-    } is not implemented yet.`
-  );
+  const modal = document.getElementById("editStaffModal");
+  if (!modal) return;
+  document.getElementById("editStaffDbId").value = staff.id || "";
+  document.getElementById("editFirstName").value = staff.first_name || "";
+  document.getElementById("editLastName").value = staff.last_name || "";
+  document.getElementById("editPhone").value = staff.phone || "";
+  document.getElementById("editPosition").value = staff.position || "";
+  document.getElementById("editDepartment").value = staff.department || "";
+  document.getElementById("editRole").value = staff.role || "staff";
+  document.getElementById("editIsActive").checked = staff.is_active !== false;
+  modal.classList.add("is-open");
+}
+
+async function handleEditStaffSubmit(event) {
+  event.preventDefault();
+  const id = document.getElementById("editStaffDbId").value;
+  if (!id) return showToast("Could not identify this staff member.", "error");
+  const patch = {
+    first_name: document.getElementById("editFirstName").value.trim(),
+    last_name: document.getElementById("editLastName").value.trim(),
+    phone: document.getElementById("editPhone").value.trim() || null,
+    position: document.getElementById("editPosition").value.trim() || null,
+    department: document.getElementById("editDepartment").value.trim() || null,
+    role: document.getElementById("editRole").value,
+    is_active: document.getElementById("editIsActive").checked,
+  };
+  if (!patch.first_name || !patch.last_name) return showToast("First and last name are required.", "error");
+  const button = document.getElementById("saveEditStaffBtn");
+  button && (button.disabled = true);
+  try {
+    const { error } = await window.supabaseClient.from("profiles").update(patch).eq("id", id);
+    if (error) throw error;
+    document.getElementById("editStaffModal")?.classList.remove("is-open");
+    await reloadStaffFromDatabase();
+    showToast("Staff details updated successfully.", "success");
+  } catch (err) {
+    console.error("[VSAS] Staff update failed:", err);
+    showToast(err?.message || "Could not update this staff member.", "error");
+  } finally { if (button) button.disabled = false; }
 }
 
 /**
@@ -1077,15 +1117,13 @@ async function deleteStaff(staff) {
      * This prevents us from treating a zero-row DELETE as a successful
      * deletion.
      */
-    const { data: deletionResult, error } = await window.supabaseClient.functions.invoke(
-      "manage-vsas",
-      { body: { action: "delete_staff", id: staff.id } }
-    );
-
-    if (error || deletionResult?.deleted !== staff.id) throw error || new Error("Supabase did not confirm deletion.");
-
-    const deletedCount = 1;
-    const deletedRows = [{ id: staff.id }];
+    const { data: deletedRows, error } = await window.supabaseClient
+      .from("profiles")
+      .delete()
+      .eq("id", staff.id)
+      .select("id");
+    if (error) throw error;
+    const deletedCount = deletedRows?.length || 0;
 
     /*
      * If zero rows came back, we cannot claim the database deletion

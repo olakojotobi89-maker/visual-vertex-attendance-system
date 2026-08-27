@@ -445,6 +445,25 @@
     </div>
   </div>
 
+
+  <div class="modal-overlay" id="editStaffModal" role="dialog" aria-modal="true" aria-labelledby="editStaffModalTitle">
+    <div class="modal-card">
+      <div class="modal-header"><h2 id="editStaffModalTitle">Edit Staff</h2><button type="button" class="modal-close" id="closeEditStaffBtn" aria-label="Close">×</button></div>
+      <form id="editStaffForm">
+        <div class="modal-body"><input type="hidden" id="editStaffDbId"><div class="modal-form-grid">
+          <div class="form-group"><label class="form-label">First Name</label><input id="editFirstName" class="form-control" required></div>
+          <div class="form-group"><label class="form-label">Last Name</label><input id="editLastName" class="form-control" required></div>
+          <div class="form-group"><label class="form-label">Phone</label><input id="editPhone" class="form-control"></div>
+          <div class="form-group"><label class="form-label">Position</label><input id="editPosition" class="form-control"></div>
+          <div class="form-group"><label class="form-label">Department</label><input id="editDepartment" class="form-control"></div>
+          <div class="form-group"><label class="form-label">Role</label><select id="editRole" class="form-control"><option value="admin">Admin</option><option value="hr">HR</option><option value="manager">Manager</option><option value="ceo">CEO</option><option value="staff">Staff</option></select></div>
+          <div class="form-group span-2"><label><input type="checkbox" id="editIsActive"> Active staff member</label></div>
+        </div></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" id="cancelEditStaffBtn">Cancel</button><button type="submit" class="btn btn-primary" id="saveEditStaffBtn">Save Changes</button></div>
+      </form>
+    </div>
+  </div>
+
   <!-- Load order: Supabase CDN -> supabase.js (client init) -> auth.js (session/guards) -> staff-management.js (page logic) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js"></script>

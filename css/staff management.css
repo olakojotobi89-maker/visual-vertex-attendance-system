@@ -122,8 +122,8 @@ html, body {
 }
 
 .sidebar-brand .company-logo {
-  width: 32px;
-  height: 32px;
+  width: auto;
+  height: auto;
   object-fit: contain;
   flex-shrink: 0;
 }

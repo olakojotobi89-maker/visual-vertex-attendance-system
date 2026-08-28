@@ -2213,11 +2213,14 @@ async function handleAddStaffSubmit(
 
     closeAddStaffModal();
 
+    const welcomeEmailSent =
+      data?.welcome_email?.sent === true;
+
     showToast(
-      `${fullNameOf(
-        newProfile
-      )} was added successfully.`,
-      "success"
+      welcomeEmailSent
+        ? `${fullNameOf(newProfile)} was added successfully and the welcome email was sent.`
+        : `${fullNameOf(newProfile)} was added successfully, but the welcome email could not be sent.`,
+      welcomeEmailSent ? "success" : "warning"
     );
   } catch (err) {
     console.error(

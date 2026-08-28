@@ -55,6 +55,18 @@ const ALLOWED_AVATAR_TYPES = new Set(["image/jpeg", "image/png"]);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2MB
 const VALID_ROLES = new Set(["admin", "hr", "manager", "ceo", "staff"]);
 
+// Resend configuration. The API key is stored only in Supabase Edge Function
+// secrets and is never exposed to the browser. Until a custom domain is
+// verified, Resend can use its onboarding@resend.dev sender for testing.
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const RESEND_FROM =
+  Deno.env.get("RESEND_FROM_EMAIL") ||
+  "Visual Vertex Technology Company <onboarding@resend.dev>";
+const APP_URL =
+  Deno.env.get("APP_URL") ||
+  "https://visual-vertex-attendance-system.onrender.com";
+const LOGO_URL = `${APP_URL.replace(/\/$/, "")}/images/logo.png`;
+
 // --------------------------------------------------------------------------
 // Small helpers
 // --------------------------------------------------------------------------
@@ -199,6 +211,141 @@ async function uploadAvatar(
 }
 
 // --------------------------------------------------------------------------
+// Welcome email
+// --------------------------------------------------------------------------
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => {
+    const entities: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    };
+    return entities[character] || character;
+  });
+}
+
+async function sendWelcomeEmail(values: StaffPayload, userId: string): Promise<{
+  sent: boolean;
+  id?: string;
+  error?: string;
+}> {
+  if (!RESEND_API_KEY) {
+    console.error("[create-staff] RESEND_API_KEY is not configured.");
+    return { sent: false, error: "RESEND_API_KEY is not configured." };
+  }
+
+  const firstName = escapeHtml(values.firstName.trim());
+  const lastName = escapeHtml(values.lastName.trim());
+  const fullName = `${firstName} ${lastName}`.trim();
+  const email = escapeHtml(values.email.trim());
+  const password = escapeHtml(values.tempPassword);
+  const staffId = escapeHtml(values.staffId.trim());
+  const role = escapeHtml(values.role.trim());
+  const department = escapeHtml(values.department.trim());
+  const position = escapeHtml(values.position.trim());
+  const safeAppUrl = escapeHtml(APP_URL);
+  const safeLogoUrl = escapeHtml(LOGO_URL);
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Welcome to Visual Vertex Technology Company</title>
+</head>
+<body style="margin:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#18181b;">
+  <div style="max-width:620px;margin:0 auto;padding:32px 16px;">
+    <div style="background:#ffffff;border:1px solid #e4e4e7;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.06);">
+      <div style="padding:28px 28px 18px;text-align:center;border-bottom:1px solid #f0f0f0;">
+        <img src="${safeLogoUrl}" alt="Visual Vertex Technology Company" style="width:92px;height:92px;object-fit:contain;border-radius:16px;display:block;margin:0 auto 14px;">
+        <div style="font-size:21px;font-weight:700;">Visual Vertex Technology Company</div>
+        <div style="font-size:13px;color:#71717a;margin-top:5px;">Visual Vertex Staff Attendance System</div>
+      </div>
+
+      <div style="padding:30px 28px;">
+        <h1 style="font-size:25px;line-height:1.25;margin:0 0 12px;">Welcome, ${firstName} 👋</h1>
+        <p style="font-size:15px;line-height:1.7;margin:0 0 18px;color:#3f3f46;">
+          Your staff account has been created successfully. Welcome to Visual Vertex Technology Company. We are pleased to have you on the team.
+        </p>
+
+        <div style="background:#fafafa;border:1px solid #e4e4e7;border-radius:14px;padding:20px;margin:22px 0;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:14px;">Your login details</div>
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <tr><td style="padding:7px 0;color:#71717a;width:38%;">Email</td><td style="padding:7px 0;font-weight:600;">${email}</td></tr>
+            <tr><td style="padding:7px 0;color:#71717a;">Temporary password</td><td style="padding:7px 0;font-weight:700;word-break:break-word;">${password}</td></tr>
+            <tr><td style="padding:7px 0;color:#71717a;">Staff ID</td><td style="padding:7px 0;font-weight:600;">${staffId}</td></tr>
+            <tr><td style="padding:7px 0;color:#71717a;">Department</td><td style="padding:7px 0;">${department}</td></tr>
+            <tr><td style="padding:7px 0;color:#71717a;">Position</td><td style="padding:7px 0;">${position}</td></tr>
+            <tr><td style="padding:7px 0;color:#71717a;">Role</td><td style="padding:7px 0;">${role}</td></tr>
+          </table>
+        </div>
+
+        <div style="text-align:center;margin:26px 0;">
+          <a href="${safeAppUrl}/login.html" style="display:inline-block;background:#ef2f2f;color:#ffffff;text-decoration:none;font-weight:700;padding:13px 24px;border-radius:10px;">Open VSAS Login</a>
+        </div>
+
+        <p style="font-size:13px;line-height:1.7;color:#52525b;margin:18px 0 0;">
+          <strong>Important:</strong> This is a temporary password. Please log in and change your password immediately after your first successful login. Keep your login details private and do not share them with anyone.
+        </p>
+
+        <p style="font-size:13px;line-height:1.7;color:#71717a;margin:20px 0 0;">
+          Website: <a href="${safeAppUrl}" style="color:#dc2626;">${safeAppUrl}</a>
+        </p>
+      </div>
+
+      <div style="padding:18px 28px;background:#18181b;color:#d4d4d8;text-align:center;font-size:12px;line-height:1.6;">
+        Visual Vertex Technology Company<br>
+        This is an automated account-creation email. Please do not reply to this message.
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+        // Prevent duplicate welcome emails if a request is retried.
+        "Idempotency-Key": `vsas-welcome-${userId}`,
+      },
+      body: JSON.stringify({
+        from: RESEND_FROM,
+        to: [values.email.trim()],
+        subject: "Welcome to Visual Vertex Technology Company — Your VSAS Login Details",
+        html,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const message =
+        typeof result?.message === "string"
+          ? result.message
+          : typeof result?.name === "string"
+            ? result.name
+            : `Resend returned HTTP ${response.status}.`;
+      console.error("[create-staff] Resend email failed:", result);
+      return { sent: false, error: message };
+    }
+
+    return { sent: true, id: result?.id };
+  } catch (err) {
+    console.error("[create-staff] Welcome email request failed:", err);
+    return {
+      sent: false,
+      error: err instanceof Error ? err.message : "Unable to contact Resend.",
+    };
+  }
+}
+
+// --------------------------------------------------------------------------
 // Handler
 // --------------------------------------------------------------------------
 
@@ -338,10 +485,25 @@ Deno.serve(async (req: Request) => {
     return errorResponse(status, message);
   }
 
-  // 7. Success.
-  return jsonResponse(201, { profile: insertedProfile });
+  // 7. Send the welcome email only after the Auth user and profile both
+  // exist. Email failure does NOT roll back the account: the staff member
+  // has already been created successfully and an admin can resend later.
+  const welcomeEmail = await sendWelcomeEmail(values, newUserId);
+
+  if (!welcomeEmail.sent) {
+    console.warn(
+      "[create-staff] Staff created but welcome email was not sent:",
+      welcomeEmail.error,
+    );
+  }
+
+  // 8. Success.
+  return jsonResponse(201, {
+    profile: insertedProfile,
+    welcome_email: {
+      sent: welcomeEmail.sent,
+      id: welcomeEmail.id ?? null,
+      error: welcomeEmail.sent ? null : welcomeEmail.error ?? "Unknown email error.",
+    },
+  });
 });
-</output></invoke>
-</invoke>
-</invoke>
-</invoke>

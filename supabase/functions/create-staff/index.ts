@@ -19,6 +19,8 @@
 //   tempPassword   string   required   (min 8 chars)
 //   profilePicture File     optional   (image/jpeg | image/png, max 2MB)
 //
+// No other form fields are accepted — see ALLOWED_FORM_FIELDS below.
+//
 // Auth: the caller's Supabase session access token must be sent in the
 // `Authorization: Bearer <token>` header. When called via
 // `supabase.functions.invoke()` from the browser, supabase-js does this
@@ -36,6 +38,14 @@ import {
   handleOptions,
   jsonResponse,
 } from "../_shared/cors.ts";
+import {
+  rejectByContentLength,
+  DEFAULT_MAX_MULTIPART_BODY_BYTES,
+  requireString,
+  optionalPhone,
+  requireEmail,
+  requireEnum,
+} from "../_shared/security/mod.ts";
 
 // --------------------------------------------------------------------------
 // Environment
@@ -53,7 +63,33 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !ANON_KEY) {
 const AVATAR_BUCKET = "avatars";
 const ALLOWED_AVATAR_TYPES = new Set(["image/jpeg", "image/png"]);
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2MB
-const VALID_ROLES = new Set(["admin", "hr", "manager", "ceo", "staff"]);
+const VALID_ROLES = ["admin", "hr", "manager", "ceo", "staff"] as const;
+
+// The exact set of form fields this endpoint accepts. Anything else in the
+// multipart body is rejected up front (see parseForm()).
+const ALLOWED_FORM_FIELDS = new Set([
+  "firstName",
+  "lastName",
+  "email",
+  "phone",
+  "department",
+  "position",
+  "role",
+  "staffId",
+  "tempPassword",
+  "profilePicture",
+]);
+
+// Reasonable maximum lengths for the text fields. These bound how much
+// data can flow into the DB insert / welcome email per field.
+const FIELD_MAX_LENGTHS = {
+  firstName: 100,
+  lastName: 100,
+  department: 100,
+  position: 100,
+  staffId: 64,
+} as const;
+const MAX_TEMP_PASSWORD_LENGTH = 128;
 
 // Resend configuration. The API key is stored only in Supabase Edge Function
 // secrets and is never exposed to the browser. Until a custom domain is
@@ -71,14 +107,6 @@ const LOGO_URL = `${APP_URL.replace(/\/$/, "")}/images/logo.png`;
 // Small helpers
 // --------------------------------------------------------------------------
 
-function isEmail(value: string): boolean {
-  return /\S+@\S+\.\S+/.test(value);
-}
-
-function isPhone(value: string): boolean {
-  return /^[+\d][\d\s-]{6,}$/.test(value);
-}
-
 interface StaffPayload {
   firstName: string;
   lastName: string;
@@ -95,17 +123,45 @@ interface StaffPayload {
 function validatePayload(values: Partial<StaffPayload>): string[] {
   const errors: string[] = [];
 
-  if (!values.firstName?.trim()) errors.push("First name is required.");
-  if (!values.lastName?.trim()) errors.push("Last name is required.");
-  if (!values.email?.trim() || !isEmail(values.email.trim())) errors.push("A valid email is required.");
-  if (values.phone?.trim() && !isPhone(values.phone.trim())) errors.push("Phone number is invalid.");
-  if (!values.department?.trim()) errors.push("Department is required.");
-  if (!values.position?.trim()) errors.push("Position is required.");
-  if (!values.role?.trim() || !VALID_ROLES.has(values.role.trim())) errors.push("A valid role is required.");
-  if (!values.staffId?.trim()) errors.push("Staff ID is required.");
-  if (!values.tempPassword || values.tempPassword.length < 8) {
-    errors.push("Temporary password must be at least 8 characters.");
-  }
+  const firstName = requireString(values.firstName, "First name", {
+    maxLength: FIELD_MAX_LENGTHS.firstName,
+  });
+  if (!firstName.ok) errors.push(firstName.error.message);
+
+  const lastName = requireString(values.lastName, "Last name", {
+    maxLength: FIELD_MAX_LENGTHS.lastName,
+  });
+  if (!lastName.ok) errors.push(lastName.error.message);
+
+  const email = requireEmail(values.email, "Email");
+  if (!email.ok) errors.push(email.error.message);
+
+  const phone = optionalPhone(values.phone, "Phone number");
+  if (!phone.ok) errors.push(phone.error.message);
+
+  const department = requireString(values.department, "Department", {
+    maxLength: FIELD_MAX_LENGTHS.department,
+  });
+  if (!department.ok) errors.push(department.error.message);
+
+  const position = requireString(values.position, "Position", {
+    maxLength: FIELD_MAX_LENGTHS.position,
+  });
+  if (!position.ok) errors.push(position.error.message);
+
+  const role = requireEnum(values.role, "Role", VALID_ROLES);
+  if (!role.ok) errors.push(role.error.message);
+
+  const staffId = requireString(values.staffId, "Staff ID", {
+    maxLength: FIELD_MAX_LENGTHS.staffId,
+  });
+  if (!staffId.ok) errors.push(staffId.error.message);
+
+  const tempPassword = requireString(values.tempPassword, "Temporary password", {
+    minLength: 8,
+    maxLength: MAX_TEMP_PASSWORD_LENGTH,
+  });
+  if (!tempPassword.ok) errors.push(tempPassword.error.message);
 
   return errors;
 }
@@ -154,12 +210,39 @@ async function requireAdmin(
 /** Reads and validates a multipart/form-data request. */
 async function parseForm(
   req: Request,
-): Promise<{ values: StaffPayload; profilePicture: File | null } | { error: string }> {
+): Promise<
+  | { values: StaffPayload; profilePicture: File | null }
+  | { error: string; status?: number }
+> {
+  // Confirm the request actually claims to be multipart/form-data before
+  // handing it to req.formData(), which otherwise throws a generic error
+  // for any malformed or unexpected body.
+  const contentType = req.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("multipart/form-data")) {
+    return { error: "Expected a multipart/form-data request.", status: 400 };
+  }
+
+  // Cheap early rejection for obviously oversized bodies (based on
+  // Content-Length). req.formData() reads the whole stream internally, so
+  // this pre-check — plus the per-field text limits and existing 2MB
+  // avatar cap below — is what bounds this endpoint's request size.
+  const sizeCheck = rejectByContentLength(req, DEFAULT_MAX_MULTIPART_BODY_BYTES);
+  if (sizeCheck) {
+    return { error: sizeCheck.message, status: sizeCheck.status };
+  }
+
   let form: FormData;
   try {
     form = await req.formData();
   } catch {
-    return { error: "Expected multipart/form-data body." };
+    return { error: "Expected multipart/form-data body.", status: 400 };
+  }
+
+  const unexpectedFields = [...new Set([...form.keys()])].filter(
+    (key) => !ALLOWED_FORM_FIELDS.has(key),
+  );
+  if (unexpectedFields.length > 0) {
+    return { error: `Unexpected field(s): ${unexpectedFields.join(", ")}.`, status: 400 };
   }
 
   const values: StaffPayload = {
@@ -179,10 +262,10 @@ async function parseForm(
 
   if (profilePicture) {
     if (!ALLOWED_AVATAR_TYPES.has(profilePicture.type)) {
-      return { error: "Profile picture must be a JPG or PNG image." };
+      return { error: "Profile picture must be a JPG or PNG image.", status: 400 };
     }
     if (profilePicture.size > MAX_AVATAR_BYTES) {
-      return { error: "Profile picture must be 2MB or smaller." };
+      return { error: "Profile picture must be 2MB or smaller.", status: 400 };
     }
   }
 
@@ -372,10 +455,11 @@ Deno.serve(async (req: Request) => {
     return errorResponse(authResult.status, authResult.message);
   }
 
-  // 2. Parse + validate the form payload.
+  // 2. Parse + validate the form payload (content-type, size, allowed
+  // fields, and field-level rules — see parseForm() and validatePayload()).
   const parsed = await parseForm(req);
   if ("error" in parsed) {
-    return errorResponse(400, parsed.error);
+    return errorResponse(parsed.status ?? 400, parsed.error);
   }
   const { values, profilePicture } = parsed;
 

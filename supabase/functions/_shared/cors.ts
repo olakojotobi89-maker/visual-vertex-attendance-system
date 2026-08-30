@@ -4,7 +4,7 @@
 //
 // 🔐 Before deploying to production, replace the wildcard origin with
 //    your actual production domain:
-//      "Access-Control-Allow-Origin": "https://vsas.yourcompany.com"
+//      "Access-Control-Allow-Origin": "https://vsas.visualvertextechnologycompany.com"
 // -----------------------------------------------------------------------
 
 const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") || "*";

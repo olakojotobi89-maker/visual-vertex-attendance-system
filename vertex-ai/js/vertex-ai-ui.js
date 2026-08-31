@@ -1,29 +1,20 @@
+"use strict";
 /**
  * Vertex AI UI Controller
  * ----------------------------------------------------------------------
- * UI-only controller for the global Vertex AI Assistant.
+ * Controls the Vertex AI Assistant interface.
  *
- * Responsibilities:
- * - Open / close / minimize the assistant
- * - Handle launcher, overlay, close and minimize controls
- * - Handle suggested questions
- * - Render messages safely
- * - Handle the input form
- * - Show / hide typing indicator
- * - Auto-scroll conversation
- * - Provide a small public API for future Vertex AI modules
+ * IMPORTANT:
+ * This file does NOT contain the AI engine or knowledge base.
  *
- * NOT responsible for:
- * - AI/API calls
- * - Supabase
- * - Knowledge-base search
- * - Authentication
- * - RLS
- * - Caching
- * - Voice synthesis
+ * It sends user questions to:
  *
- * The temporary mock response exists ONLY for interface testing and
- * must be replaced by the future knowledge/AI controller.
+ *      VertexAI.processQuestion()
+ *
+ * The main orchestrator then connects to:
+ *
+ *      VertexAIResponseEngine
+ *
  * ----------------------------------------------------------------------
  */
 
@@ -46,16 +37,17 @@
   };
 
   const CLOSE_TRANSITION_MS = 220;
-  const MOCK_RESPONSE_DELAY_MS = 650;
 
   let elements = null;
   let initialized = false;
   let closeTimer = null;
-  let mockResponseTimer = null;
 
   /**
-   * Resolve all required DOM elements.
+   * --------------------------------------------------------------------
+   * Resolve DOM elements
+   * --------------------------------------------------------------------
    */
+
   function resolveElements() {
     const root = document.querySelector(SELECTORS.root);
 
@@ -80,8 +72,11 @@
   }
 
   /**
-   * Check that the minimum interface exists.
+   * --------------------------------------------------------------------
+   * Required elements
+   * --------------------------------------------------------------------
    */
+
   function hasRequiredElements() {
     return Boolean(
       elements &&
@@ -95,8 +90,11 @@
   }
 
   /**
-   * Update the panel state and accessibility attributes.
+   * --------------------------------------------------------------------
+   * Panel state
+   * --------------------------------------------------------------------
    */
+
   function setPanelState(isOpen) {
     if (!elements || !elements.panel || !elements.launcher) {
       return;
@@ -119,8 +117,11 @@
   }
 
   /**
-   * Open the Vertex AI panel.
+   * --------------------------------------------------------------------
+   * Open assistant
+   * --------------------------------------------------------------------
    */
+
   function open() {
     if (!hasRequiredElements()) {
       return;
@@ -148,11 +149,11 @@
   }
 
   /**
-   * Close the Vertex AI panel.
-   *
-   * The data state changes immediately so CSS can animate the closing state.
-   * The hidden attribute is applied shortly afterward.
+   * --------------------------------------------------------------------
+   * Close assistant
+   * --------------------------------------------------------------------
    */
+
   function close() {
     if (!hasRequiredElements()) {
       return;
@@ -184,8 +185,11 @@
   }
 
   /**
-   * Toggle the panel.
+   * --------------------------------------------------------------------
+   * Toggle assistant
+   * --------------------------------------------------------------------
    */
+
   function toggle() {
     if (!hasRequiredElements()) {
       return;
@@ -202,34 +206,51 @@
   }
 
   /**
-   * Minimize the assistant without clearing the conversation.
-   *
-   * For the current UI, minimize returns the panel to its closed state.
-   * Conversation DOM remains untouched.
+   * --------------------------------------------------------------------
+   * Minimize assistant
+   * --------------------------------------------------------------------
    */
+
   function minimize() {
     close();
   }
 
   /**
-   * Safely create a message element.
-   *
-   * User-controlled text is inserted with textContent, never innerHTML.
+   * --------------------------------------------------------------------
+   * Create message safely
+   * --------------------------------------------------------------------
    */
+
   function createMessageElement(role, text) {
     const message = document.createElement("div");
 
-    const normalizedRole = ["user", "assistant", "system"].includes(role)
+    const normalizedRole = [
+      "user",
+      "assistant",
+      "system"
+    ].includes(role)
       ? role
       : "system";
 
     message.className =
-      "vertex-ai-message vertex-ai-message--" + normalizedRole;
+      "vertex-ai-message vertex-ai-message--" +
+      normalizedRole;
 
-    message.setAttribute("data-vertex-ai-message-role", normalizedRole);
+    message.setAttribute(
+      "data-vertex-ai-message-role",
+      normalizedRole
+    );
 
     const content = document.createElement("div");
-    content.className = "vertex-ai-message-content";
+
+    content.className =
+      "vertex-ai-message-content";
+
+    /*
+     * SECURITY:
+     * Never use innerHTML for AI/user generated text.
+     */
+
     content.textContent = String(text ?? "");
 
     message.appendChild(content);
@@ -238,18 +259,18 @@
   }
 
   /**
-   * Add a message to the conversation.
-   *
-   * @param {"user"|"assistant"|"system"} role
-   * @param {string} text
-   * @returns {HTMLElement|null}
+   * --------------------------------------------------------------------
+   * Add message
+   * --------------------------------------------------------------------
    */
+
   function addMessage(role, text) {
     if (!elements || !elements.messages) {
       return null;
     }
 
-    const message = createMessageElement(role, text);
+    const message =
+      createMessageElement(role, text);
 
     elements.messages.appendChild(message);
 
@@ -263,8 +284,11 @@
   }
 
   /**
-   * Clear all conversation messages.
+   * --------------------------------------------------------------------
+   * Clear conversation
+   * --------------------------------------------------------------------
    */
+
   function clearConversation() {
     if (!elements || !elements.messages) {
       return;
@@ -280,20 +304,21 @@
   }
 
   /**
-   * Show the typing indicator.
+   * --------------------------------------------------------------------
+   * Typing indicator
+   * --------------------------------------------------------------------
    */
+
   function showTyping() {
     if (!elements || !elements.typing) {
       return;
     }
 
     elements.typing.hidden = false;
+
     scrollToLatest();
   }
 
-  /**
-   * Hide the typing indicator.
-   */
   function hideTyping() {
     if (!elements || !elements.typing) {
       return;
@@ -303,71 +328,138 @@
   }
 
   /**
-   * Scroll the conversation area to the newest content.
+   * --------------------------------------------------------------------
+   * Scroll conversation
+   * --------------------------------------------------------------------
    */
+
   function scrollToLatest() {
     if (!elements || !elements.messages) {
       return;
     }
 
     window.requestAnimationFrame(function () {
-      elements.messages.scrollTop = elements.messages.scrollHeight;
+      elements.messages.scrollTop =
+        elements.messages.scrollHeight;
     });
   }
 
   /**
-   * Enable/disable the send button according to input content.
+   * --------------------------------------------------------------------
+   * Send button state
+   * --------------------------------------------------------------------
    */
+
   function updateSendState() {
-    if (!elements || !elements.input || !elements.send) {
+    if (!elements || !elements.input) {
       return;
     }
 
-    const hasText = elements.input.value.trim().length > 0;
+    const hasText =
+      elements.input.value.trim().length > 0;
 
-    elements.send.disabled = !hasText;
+    if (elements.send) {
+      elements.send.disabled = !hasText;
+    }
   }
 
   /**
-   * Temporarily respond to a submitted question.
-   *
-   * THIS IS ONLY A UI TEST RESPONSE.
-   * The future Vertex AI controller will replace this mechanism.
+   * --------------------------------------------------------------------
+   * Get Main Vertex AI Controller
+   * --------------------------------------------------------------------
    */
-  function submitMockQuestion(question) {
-    const cleanQuestion = String(question || "").trim();
+
+  function getVertexAI() {
+    if (
+      window.VertexAI &&
+      typeof window.VertexAI.processQuestion === "function"
+    ) {
+      return window.VertexAI;
+    }
+
+    return null;
+  }
+
+  /**
+   * --------------------------------------------------------------------
+   * Submit real AI question
+   * --------------------------------------------------------------------
+   *
+   * IMPORTANT:
+   *
+   * The old version of this file used a fake response:
+   *
+   * "Vertex AI knowledge retrieval is not connected yet..."
+   *
+   * That behavior has been completely removed.
+   *
+   * Questions are now sent to:
+   *
+   *      VertexAI.processQuestion()
+   *
+   * which connects to the real Response Engine.
+   */
+
+  async function submitQuestion(question) {
+    const cleanQuestion =
+      String(question || "").trim();
 
     if (!cleanQuestion) {
       return;
     }
 
-    addMessage("user", cleanQuestion);
+    const vertexAI = getVertexAI();
 
-    elements.input.value = "";
-    updateSendState();
+    /*
+     * If the main orchestrator isn't ready yet,
+     * do not pretend that an AI response exists.
+     */
 
-    showTyping();
+    if (!vertexAI) {
+      console.error(
+        "[Vertex AI UI] Main VertexAI controller is not available."
+      );
 
-    if (mockResponseTimer) {
-      window.clearTimeout(mockResponseTimer);
-    }
-
-    mockResponseTimer = window.setTimeout(function () {
       hideTyping();
 
       addMessage(
-        "assistant",
-        "Vertex AI knowledge retrieval is not connected yet. " +
-        "This interface is ready for the knowledge engine."
+        "system",
+        "Vertex AI is still initializing. Please try again in a moment."
       );
 
-      mockResponseTimer = null;
-    }, MOCK_RESPONSE_DELAY_MS);
+      return;
+    }
+
+    /*
+     * The orchestrator handles adding the user message,
+     * typing indicator, knowledge retrieval and assistant response.
+     */
+
+    try {
+      await vertexAI.processQuestion(
+        cleanQuestion
+      );
+    } catch (error) {
+      console.error(
+        "[Vertex AI UI] Question processing failed:",
+        error
+      );
+
+      hideTyping();
+
+      addMessage(
+        "system",
+        "Vertex AI encountered a temporary problem while processing your question."
+      );
+    }
   }
 
   /**
-   * Handle form submission.
+   * --------------------------------------------------------------------
+   * Form submission
+   * --------------------------------------------------------------------
    */
+
   function handleFormSubmit(event) {
     event.preventDefault();
 
@@ -375,26 +467,43 @@
       return;
     }
 
-    const question = elements.input.value.trim();
+    const question =
+      elements.input.value.trim();
 
     if (!question) {
       updateSendState();
       return;
     }
 
-    submitMockQuestion(question);
+    /*
+     * Clear the input immediately.
+     */
+
+    elements.input.value = "";
+
+    updateSendState();
+
+    /*
+     * Send question to the real Vertex AI controller.
+     */
+
+    submitQuestion(question);
   }
 
   /**
-   * Handle textarea keyboard behavior.
-   *
-   * Enter submits.
-   * Shift + Enter creates a new line.
+   * --------------------------------------------------------------------
+   * Keyboard behavior
+   * --------------------------------------------------------------------
    */
+
   function handleInputKeydown(event) {
     if (event.key !== "Enter") {
       return;
     }
+
+    /*
+     * Shift + Enter creates a new line.
+     */
 
     if (event.shiftKey) {
       return;
@@ -408,38 +517,74 @@
   }
 
   /**
-   * Handle suggested question buttons.
+   * --------------------------------------------------------------------
+   * Suggested question
+   * --------------------------------------------------------------------
    */
+
   function handleSuggestion(button) {
-    if (!elements || !elements.input || !button) {
+    if (
+      !elements ||
+      !elements.input ||
+      !elements.form ||
+      !button
+    ) {
       return;
     }
 
-    const question = button.textContent.trim();
+    /*
+     * Prefer an explicit question attribute if provided.
+     */
+
+    const question =
+      button.getAttribute(
+        "data-question"
+      ) ||
+      button.textContent.trim();
 
     if (!question) {
       return;
     }
 
     elements.input.value = question;
+
     updateSendState();
 
     elements.form.requestSubmit();
   }
 
   /**
-   * Central delegated click handler.
+   * --------------------------------------------------------------------
+   * Root click delegation
+   * --------------------------------------------------------------------
    */
-  function handleRootClick(event) {
-    const actionElement = event.target.closest("[data-vertex-ai-action]");
 
-    if (!actionElement || !elements.root.contains(actionElement)) {
+  function handleRootClick(event) {
+    const target = event.target;
+
+    if (!target || typeof target.closest !== "function") {
       return;
     }
 
-    const action = actionElement.getAttribute("data-vertex-ai-action");
+    const actionElement =
+      target.closest(
+        "[data-vertex-ai-action]"
+      );
+
+    if (
+      !actionElement ||
+      !elements.root.contains(actionElement)
+    ) {
+      return;
+    }
+
+    const action =
+      actionElement.getAttribute(
+        "data-vertex-ai-action"
+      );
 
     switch (action) {
+
       case "toggle-panel":
         toggle();
         break;
@@ -457,9 +602,10 @@
         break;
 
       /*
-       * Voice actions are intentionally not implemented here.
-       * vertex-ai-voice.js will handle them later.
+       * Voice controls are handled by the
+       * dedicated voice module.
        */
+
       case "toggle-voice":
       case "play-voice":
       case "stop-voice":
@@ -471,10 +617,11 @@
   }
 
   /**
-   * Handle global keyboard interactions.
-   *
-   * Escape only affects Vertex AI when the panel is open.
+   * --------------------------------------------------------------------
+   * Escape key
+   * --------------------------------------------------------------------
    */
+
   function handleDocumentKeydown(event) {
     if (event.key !== "Escape") {
       return;
@@ -485,25 +632,32 @@
     }
 
     const isOpen =
-      elements.panel.getAttribute("data-vertex-ai-state") === "open";
+      elements.panel.getAttribute(
+        "data-vertex-ai-state"
+      ) === "open";
 
     if (!isOpen) {
       return;
     }
 
     event.preventDefault();
+
     close();
   }
 
   /**
-   * Initialize the UI.
+   * --------------------------------------------------------------------
+   * Initialize UI
+   * --------------------------------------------------------------------
    */
+
   function init() {
     if (initialized) {
       return window.VertexAIUI;
     }
 
-    elements = resolveElements();
+    elements =
+      resolveElements();
 
     if (!hasRequiredElements()) {
       console.warn(
@@ -514,54 +668,68 @@
     }
 
     /*
-     * Establish the initial closed state without changing the HTML file.
+     * Initial closed state.
      */
+
     elements.panel.hidden = true;
+
     setPanelState(false);
 
     if (elements.overlay) {
       elements.overlay.hidden = true;
-      elements.overlay.setAttribute("aria-hidden", "true");
+
+      elements.overlay.setAttribute(
+        "aria-hidden",
+        "true"
+      );
     }
 
     updateSendState();
 
     /*
-     * One delegated listener handles all Vertex AI action buttons.
+     * UI events.
      */
-    elements.root.addEventListener("click", handleRootClick);
 
-    /*
-     * Form submission.
-     */
-    elements.form.addEventListener("submit", handleFormSubmit);
+    elements.root.addEventListener(
+      "click",
+      handleRootClick
+    );
 
-    /*
-     * Keyboard input.
-     */
-    elements.input.addEventListener("keydown", handleInputKeydown);
+    elements.form.addEventListener(
+      "submit",
+      handleFormSubmit
+    );
 
-    /*
-     * Keep send button state synchronized.
-     */
-    elements.input.addEventListener("input", updateSendState);
+    elements.input.addEventListener(
+      "keydown",
+      handleInputKeydown
+    );
 
-    /*
-     * Escape handling is attached once at document level.
-     */
-    document.addEventListener("keydown", handleDocumentKeydown);
+    elements.input.addEventListener(
+      "input",
+      updateSendState
+    );
+
+    document.addEventListener(
+      "keydown",
+      handleDocumentKeydown
+    );
 
     initialized = true;
+
+    console.info(
+      "[Vertex AI] UI controller initialized."
+    );
 
     return window.VertexAIUI;
   }
 
   /**
-   * Public UI API.
-   *
-   * The future vertex-ai.js controller can use this API without needing
-   * to know how the DOM implementation works.
+   * --------------------------------------------------------------------
+   * Public API
+   * --------------------------------------------------------------------
    */
+
   window.VertexAIUI = {
     init,
     open,
@@ -575,15 +743,26 @@
     scrollToLatest
   };
 
-  /*
-   * Automatically initialize when the interface already exists.
-   *
-   * This allows the file to work when vertex-ai.html has already been
-   * inserted into the document.
+  /**
+   * --------------------------------------------------------------------
+   * Auto initialization
+   * --------------------------------------------------------------------
    */
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init, { once: true });
+
+  if (
+    document.readyState === "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      init,
+      { once: true }
+    );
+
   } else {
+
     init();
+
   }
+
 })();

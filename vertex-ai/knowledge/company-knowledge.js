@@ -198,7 +198,7 @@
         "Visual Vertex Technology Company provides services and solutions " +
         "across technology and digital fields. These include graphic and " +
         "creative design, web development and digital solutions, " +
-        "cybersecurity services, data analytics, cloud-related solutions, " +
+        "cybersecurity services,software development, tactical millitry hardware, data analytics, cloud-related solutions, " +
         "and IT consultation.",
 
       intents: [
@@ -262,6 +262,8 @@
         "cybersecurity-services",
         "data-analytics-services",
         "cloud-solutions",
+        "software development", 
+        "tactical military hardware",
         "it-consultation"
       ],
 

@@ -320,12 +320,16 @@
   <!-- ================================================================
      VERTEX AI ASSISTANT
      Reusable floating assistant interface.
-     The fragment (markup only) is fetched and injected into this
-     mounting point, then the Vertex AI JS modules are loaded in
-     order — only AFTER the fragment exists in the DOM — so
-     vertex-ai-ui.js / vertex-ai.js never look for #vertex-ai-launcher,
-     #vertex-ai-panel, #vertex-ai-input, #vertex-ai-messages, etc.
-     before those elements have been inserted.
+
+     Flow:
+       1. Fetch and inject the vertex-ai.html fragment into #vertex-ai-container.
+       2. Load the Vertex AI JS modules IN ORDER, one at a time, only after
+          the fragment markup exists in the DOM.
+       3. Once every module has loaded (including vertex-ai-response-engine.js
+          and vertex-ai.js), call window.VertexAI.init() exactly once.
+       4. Verify window.VertexAIResponseEngine is connected and log the result.
+
+     There is exactly ONE loader, ONE promise chain, and ONE init call below.
      ================================================================ -->
   <div id="vertex-ai-container"></div>
 
@@ -333,8 +337,8 @@
   (function () {
     "use strict";
 
-    // Order matters: config/security/cache first, then knowledge data,
-    // then search/voice/ui, then the vertex-ai.js orchestrator LAST.
+    // Dependency order: config -> security -> cache -> knowledge ->
+    // search -> voice -> ui -> response engine -> main orchestrator (last).
     var VERTEX_SCRIPTS = [
       "./vertex-ai/js/vertex-ai-config.js",
       "./vertex-ai/js/vertex-ai-security.js",
@@ -346,9 +350,8 @@
       "./vertex-ai/js/vertex-ai-search.js",
       "./vertex-ai/js/vertex-ai-voice.js",
       "./vertex-ai/js/vertex-ai-ui.js",
-      "./vertex-ai/js/vertex-ai.js",
-      "./vertex-ai/js/vertex-ai-response-engine.js"
-
+      "./vertex-ai/js/vertex-ai-response-engine.js",
+      "./vertex-ai/js/vertex-ai.js"
     ];
 
     function loadScript(src) {
@@ -357,6 +360,7 @@
         script.src = src;
         script.async = false; // preserve execution order within the chain
         script.onload = function () {
+          console.log("[Vertex AI] Loaded:", src);
           resolve();
         };
         script.onerror = function () {
@@ -373,6 +377,29 @@
           return loadScript(src);
         });
       }, Promise.resolve());
+    }
+
+    function initializeVertexAI() {
+      // Initialize the main orchestrator exactly once, only after every
+      // module (including the Response Engine) has finished loading.
+      if (window.VertexAI && typeof window.VertexAI.init === "function") {
+        window.VertexAI.init();
+        console.log("[Vertex AI] Main orchestrator initialized after all modules loaded.");
+      } else {
+        console.error("[Vertex AI] Main orchestrator is not available after module loading.");
+      }
+
+      // Verify the Response Engine connection.
+      if (
+        window.VertexAIResponseEngine &&
+        typeof window.VertexAIResponseEngine.respond === "function"
+      ) {
+        console.log("[Vertex AI] Response Engine: CONNECTED");
+      } else {
+        console.error("[Vertex AI] Response Engine: NOT CONNECTED");
+      }
+
+      console.log("[Vertex AI] All modules loaded; assistant initialized.");
     }
 
     var container = document.getElementById("vertex-ai-container");
@@ -402,7 +429,7 @@
         return loadScriptsSequentially(VERTEX_SCRIPTS);
       })
       .then(function () {
-        console.log("[Vertex AI] All modules loaded; assistant initialized.");
+        initializeVertexAI();
       })
       .catch(function (error) {
         console.error("[Vertex AI] Initialization failed:", error);

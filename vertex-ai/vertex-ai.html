@@ -1,0 +1,505 @@
+<!--
+  vertex-ai.html
+  ----------------------------------------------------------------------
+  Reusable markup fragment for the Vertex AI global floating assistant.
+
+  This is NOT a standalone page. It contains no <!DOCTYPE>, <html>,
+  <head>, or <body> — it is designed to be fetched as a string and
+  injected into the DOM of every VSAS page by vertex-ai-ui.js.
+
+  Contains no inline JavaScript.
+  Visual design belongs in vertex-ai.css / Vertex.css.
+  Behavior belongs in the vertex-ai-*.js modules.
+
+  ----------------------------------------------------------------------
+  ARCHITECTURE
+
+  vertex-ai.html
+        ↓
+  Vertex.css
+        ↓
+  vertex-ai-ui.js
+        ↓
+  vertex-ai-config.js
+  vertex-ai-security.js
+  vertex-ai-cache.js
+  knowledge files
+  knowledge-index.js
+  vertex-ai-search.js
+  vertex-ai-voice.js
+        ↓
+  vertex-ai.js
+
+  ----------------------------------------------------------------------
+-->
+
+<link rel="stylesheet" href="css/Vertex.css" />
+
+<div
+  id="vertex-ai-root"
+  class="vertex-ai-root"
+  data-vertex-ai-component="root"
+>
+
+  <!-- ==================================================================
+       Backdrop
+       Used on smaller viewports when the panel becomes fullscreen.
+       ================================================================== -->
+
+  <div
+    id="vertex-ai-overlay"
+    class="vertex-ai-overlay"
+    data-vertex-ai-overlay
+    data-vertex-ai-action="close"
+    hidden
+    aria-hidden="true"
+  ></div>
+
+
+  <!-- ==================================================================
+       Floating launcher button
+       ================================================================== -->
+
+  <button
+    id="vertex-ai-launcher"
+    class="vertex-ai-launcher"
+    type="button"
+    data-vertex-ai-action="toggle-panel"
+    aria-haspopup="dialog"
+    aria-controls="vertex-ai-panel"
+    aria-expanded="false"
+    aria-label="Open Vertex AI Assistant"
+  >
+
+    <span
+      class="vertex-ai-launcher-icon"
+      data-vertex-ai-launcher-icon
+      aria-hidden="true"
+    ></span>
+
+    <span
+      class="vertex-ai-launcher-badge"
+      data-vertex-ai-badge
+      hidden
+      aria-hidden="true"
+    ></span>
+
+  </button>
+
+
+  <!-- ==================================================================
+       Chat panel
+       ================================================================== -->
+
+  <section
+    id="vertex-ai-panel"
+    class="vertex-ai-panel"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="vertex-ai-panel-title"
+    aria-hidden="true"
+    data-vertex-ai-state="closed"
+    hidden
+  >
+
+
+    <!-- ================================================================
+         HEADER
+         ================================================================ -->
+
+    <header class="vertex-ai-header">
+
+      <!-- --------------------------------------------------------------
+           Brand area
+           -------------------------------------------------------------- -->
+
+      <div class="vertex-ai-brand">
+
+        <!-- Dedicated Visual Vertex logo container -->
+        <div
+          class="vertex-ai-logo-container"
+          data-vertex-ai-logo-container
+        >
+
+          <img
+            src="./assets/logo.png"
+            class="vertex-ai-logo"
+            data-vertex-ai-logo
+            alt="Visual Vertex Technology Company"
+            draggable="false"
+          />
+
+        </div>
+
+
+        <!-- Vertex AI text -->
+        <div class="vertex-ai-brand-text">
+
+          <h2
+            id="vertex-ai-panel-title"
+            class="vertex-ai-title"
+          >
+            Vertex AI
+          </h2>
+
+          <p
+            id="vertex-ai-status"
+            class="vertex-ai-status"
+            data-vertex-ai-status
+            aria-live="polite"
+          >
+            Ready to help
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <!-- --------------------------------------------------------------
+           Header controls
+           -------------------------------------------------------------- -->
+
+      <div class="vertex-ai-header-controls">
+
+        <button
+          id="vertex-ai-minimize"
+          class="vertex-ai-icon-button"
+          type="button"
+          data-vertex-ai-action="minimize"
+          aria-label="Minimize Vertex AI"
+          title="Minimize"
+        >
+          <span aria-hidden="true">&ndash;</span>
+        </button>
+
+
+        <button
+          id="vertex-ai-close"
+          class="vertex-ai-icon-button"
+          type="button"
+          data-vertex-ai-action="close"
+          aria-label="Close Vertex AI"
+          title="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <!-- ================================================================
+         SCROLLABLE BODY
+         ================================================================ -->
+
+    <div
+      class="vertex-ai-body"
+      data-vertex-ai-body
+    >
+
+
+      <!-- ============================================================
+           WELCOME AREA
+           ============================================================ -->
+
+      <div
+        id="vertex-ai-welcome"
+        class="vertex-ai-welcome"
+        data-vertex-ai-welcome
+      >
+
+        <div class="vertex-ai-welcome-brand">
+
+          <div
+            class="vertex-ai-welcome-logo-container"
+            aria-hidden="true"
+          >
+
+            <img
+              src="./assets/logo.png"
+              class="vertex-ai-welcome-logo"
+              alt=""
+              draggable="false"
+            />
+
+          </div>
+
+        </div>
+
+
+        <p class="vertex-ai-welcome-text">
+
+          Welcome to Vertex AI, the internal assistant for
+          Visual Vertex Technology Company.
+
+          I can help you with information about the company,
+          guidance on using VSAS, internship programme details,
+          attendance, departments, and company policies.
+
+          Ask a question below or choose one of the suggestions
+          to get started.
+
+        </p>
+
+
+        <!-- Suggested questions -->
+
+        <div
+          class="vertex-ai-suggestions"
+          role="group"
+          aria-label="Suggested questions"
+          data-vertex-ai-suggestions
+        >
+
+          <button
+            type="button"
+            class="vertex-ai-suggestion"
+            data-vertex-ai-action="ask-suggestion"
+            data-vertex-ai-suggestion-id="vsas-usage"
+          >
+            How do I use VSAS?
+          </button>
+
+
+          <button
+            type="button"
+            class="vertex-ai-suggestion"
+            data-vertex-ai-action="ask-suggestion"
+            data-vertex-ai-suggestion-id="mark-attendance"
+          >
+            How do I mark my attendance?
+          </button>
+
+
+          <button
+            type="button"
+            class="vertex-ai-suggestion"
+            data-vertex-ai-action="ask-suggestion"
+            data-vertex-ai-suggestion-id="about-visual-vertex"
+          >
+            Tell me about Visual Vertex.
+          </button>
+
+
+          <button
+            type="button"
+            class="vertex-ai-suggestion"
+            data-vertex-ai-action="ask-suggestion"
+            data-vertex-ai-suggestion-id="intern-info"
+          >
+            What should interns know?
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- ============================================================
+           CONVERSATION AREA
+           ============================================================ -->
+
+      <div
+        id="vertex-ai-messages"
+        class="vertex-ai-messages"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        data-vertex-ai-messages
+      >
+        <!--
+          vertex-ai-ui.js appends message elements here.
+        -->
+      </div>
+
+
+      <!-- ============================================================
+           TYPING INDICATOR
+           ============================================================ -->
+
+      <div
+        id="vertex-ai-typing-indicator"
+        class="vertex-ai-typing-indicator"
+        data-vertex-ai-typing
+        aria-live="polite"
+        hidden
+      >
+
+        <span class="vertex-ai-visually-hidden">
+          Vertex AI is typing
+        </span>
+
+        <span
+          class="vertex-ai-typing-dot"
+          aria-hidden="true"
+        ></span>
+
+        <span
+          class="vertex-ai-typing-dot"
+          aria-hidden="true"
+        ></span>
+
+        <span
+          class="vertex-ai-typing-dot"
+          aria-hidden="true"
+        ></span>
+
+      </div>
+
+    </div>
+
+
+    <!-- ================================================================
+         VOICE CONTROLS
+         ================================================================ -->
+
+    <div
+      class="vertex-ai-voice-controls"
+      role="group"
+      aria-label="Voice response controls"
+      data-vertex-ai-voice-controls
+    >
+
+      <button
+        id="vertex-ai-voice-toggle"
+        type="button"
+        class="vertex-ai-voice-button"
+        data-vertex-ai-action="toggle-voice"
+        aria-pressed="false"
+        aria-label="Turn voice responses on"
+        title="Toggle voice responses"
+      >
+
+        <span
+          class="vertex-ai-voice-icon"
+          data-vertex-ai-voice-icon
+          aria-hidden="true"
+        ></span>
+
+        <span
+          class="vertex-ai-visually-hidden"
+          data-vertex-ai-voice-toggle-label
+        >
+          Voice responses off
+        </span>
+
+      </button>
+
+
+      <button
+        id="vertex-ai-voice-play"
+        type="button"
+        class="vertex-ai-voice-button"
+        data-vertex-ai-action="play-voice"
+        aria-label="Play assistant response"
+        title="Play response"
+        disabled
+      >
+
+        <span
+          class="vertex-ai-play-icon"
+          data-vertex-ai-play-icon
+          aria-hidden="true"
+        ></span>
+
+      </button>
+
+
+      <button
+        id="vertex-ai-voice-stop"
+        type="button"
+        class="vertex-ai-voice-button"
+        data-vertex-ai-action="stop-voice"
+        aria-label="Stop voice playback"
+        title="Stop voice playback"
+        disabled
+      >
+
+        <span
+          class="vertex-ai-stop-icon"
+          data-vertex-ai-stop-icon
+          aria-hidden="true"
+        ></span>
+
+      </button>
+
+    </div>
+
+
+    <!-- ================================================================
+         MESSAGE INPUT
+         ================================================================ -->
+
+    <form
+      id="vertex-ai-input-form"
+      class="vertex-ai-input-form"
+      data-vertex-ai-input-form
+      autocomplete="off"
+    >
+
+      <label
+        for="vertex-ai-input"
+        class="vertex-ai-visually-hidden"
+      >
+        Ask Vertex AI a question
+      </label>
+
+
+      <textarea
+        id="vertex-ai-input"
+        name="vertex-ai-input"
+        class="vertex-ai-input"
+        data-vertex-ai-input
+        rows="1"
+        placeholder="Ask Vertex AI a question..."
+        aria-label="Ask Vertex AI a question"
+      ></textarea>
+
+
+      <span
+        id="vertex-ai-input-hint"
+        class="vertex-ai-input-hint"
+        data-vertex-ai-input-hint
+        aria-live="polite"
+      ></span>
+
+
+      <button
+        type="submit"
+        id="vertex-ai-send"
+        class="vertex-ai-send-button"
+        data-vertex-ai-action="send"
+        aria-label="Send message"
+        title="Send message"
+      >
+
+        <span
+          class="vertex-ai-send-icon"
+          data-vertex-ai-send-icon
+          aria-hidden="true"
+        ></span>
+
+      </button>
+
+    </form>
+
+
+    <!-- ================================================================
+         DISCLAIMER
+         ================================================================ -->
+
+    <p
+      id="vertex-ai-disclaimer"
+      class="vertex-ai-disclaimer"
+    >
+      Vertex AI answers are based on approved VSAS knowledge
+      and may not always be complete.
+    </p>
+
+
+  </section>
+
+</div>
+

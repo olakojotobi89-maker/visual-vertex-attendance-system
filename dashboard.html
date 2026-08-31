@@ -111,7 +111,7 @@
 
         <div class="sidebar-divider"></div>
 
-        <a href="login.html" class="sidebar-link sidebar-link--logout" id="logoutLink">
+        <a href="index.html" class="sidebar-link sidebar-link--logout" id="logoutLink">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 4.5H6A1.5 1.5 0 004.5 6v12A1.5 1.5 0 006 19.5h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14.5 8.5L18.5 12l-4 3.5M18.5 12H9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Logout
         </a>
@@ -314,6 +314,43 @@
 
     </main>
   </div>
+  <!-- ================================================================
+     VERTEX AI ASSISTANT
+     Reusable floating assistant interface
+     ================================================================ -->
+<div id="vertex-ai-container"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const container = document.getElementById("vertex-ai-container");
+
+  if (!container) {
+    console.error("[Vertex AI] Container not found.");
+    return;
+  }
+
+  fetch("./vertex-ai/vertex-ai.html")
+    .then(function (response) {
+      if (!response.ok) {
+        throw new Error(
+          "Failed to load Vertex AI interface: HTTP " + response.status
+        );
+      }
+
+      return response.text();
+    })
+    .then(function (html) {
+      container.innerHTML = html;
+
+      console.log("[Vertex AI] Interface loaded successfully.");
+    })
+    .catch(function (error) {
+      console.error("[Vertex AI] Interface failed to load:", error);
+    });
+})();
+</script>
 
   <!-- Load order: Supabase CDN -> PDF libs -> supabase.js (client init) -> auth.js (session/guards) -> main.js -> dashboard.js (page logic) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -326,5 +363,35 @@
   <script src="js/main.js"></script>
   <script src="js/notifications.js"></script>
   <script src="js/dashboard.js"></script>
+  <!-- ================================================================
+     VERTEX AI MODULES
+     ================================================================ -->
+
+<!-- Configuration -->
+<script src="./vertex-ai/js/vertex-ai-config.js"></script>
+
+<!-- Security -->
+<script src="./vertex-ai/js/vertex-ai-security.js"></script>
+
+<!-- Cache -->
+<script src="./vertex-ai/js/vertex-ai-cache.js"></script>
+
+<!-- Knowledge -->
+<script src="./vertex-ai/knowledge/company-knowledge.js"></script>
+<script src="./vertex-ai/knowledge/vsas-knowledge.js"></script>
+<script src="./vertex-ai/knowledge/internship-knowledge.js"></script>
+<script src="./vertex-ai/knowledge/knowledge-index.js"></script>
+
+<!-- Search -->
+<script src="./vertex-ai/js/vertex-ai-search.js"></script>
+
+<!-- Voice -->
+<script src="./vertex-ai/js/vertex-ai-voice.js"></script>
+
+<!-- UI -->
+<script src="./vertex-ai/js/vertex-ai-ui.js"></script>
+
+<!-- Main Vertex AI orchestrator — ALWAYS LAST -->
+<script src="./vertex-ai/js/vertex-ai.js"></script>
 </body>
 </html>

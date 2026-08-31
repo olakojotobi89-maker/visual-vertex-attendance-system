@@ -91,15 +91,17 @@
         "focus areas.",
 
       shortAnswer:
-        "Visual Vertex Technology Company is a technology company that " +
-        "provides digital, creative, and technology solutions.",
+        "Visual Vertex Technology Company is a technology company, " +
+        "founded by Olakojo Tobiloba Adams, that provides digital, " +
+        "creative, and technology solutions.",
 
       answer:
         "Visual Vertex Technology Company is a technology-focused company " +
         "that provides digital, creative, and technology solutions. The " +
-        "company focuses on helping individuals, businesses, and " +
-        "organizations through practical technology services, digital " +
-        "solutions, and professional innovation.",
+        "company was founded by Olakojo Tobiloba Adams, who serves as CEO " +
+        "and Founder. The company focuses on helping individuals, " +
+        "businesses, and organizations through practical technology " +
+        "services, digital solutions, and professional innovation.",
 
       intents: [
         "ask_company_identity",
@@ -109,7 +111,7 @@
         "ask_who_is_behind_vsas"
       ],
 
-      entities: ["Visual Vertex Technology Company", "VSAS"],
+      entities: ["Visual Vertex Technology Company", "VSAS", "Olakojo Tobiloba Adams"],
 
       keywords: [
         "visual vertex",
@@ -120,7 +122,9 @@
         "about the company",
         "about visual vertex",
         "organization",
-        "platform owner"
+        "platform owner",
+        "founder",
+        "ceo"
       ],
 
       synonyms: [
@@ -163,13 +167,105 @@
       relatedTopics: [
         "company-services",
         "company-approach",
+        "company-ceo-founder",
         "company-contact-support"
       ],
 
       followUpSuggestions: [
         "What services does Visual Vertex provide?",
+        "Who is the CEO of Visual Vertex?",
         "What is Visual Vertex's approach to technology?",
         "How can I contact Visual Vertex?"
+      ]
+    },
+
+    /**
+     * --------------------------------------------------------------
+     * CEO AND FOUNDER
+     * --------------------------------------------------------------
+     */
+    {
+      id: "company-ceo-founder",
+      category: "company",
+      subcategory: "leadership",
+      priority: 8,
+      tags: ["ceo", "founder", "leadership", "about-us"],
+
+      title: "CEO and Founder of Visual Vertex Technology Company",
+      summary:
+        "Introduces Olakojo Tobiloba Adams, the CEO and Founder of " +
+        "Visual Vertex Technology Company.",
+
+      shortAnswer:
+        "Olakojo Tobiloba Adams is the CEO and Founder of Visual Vertex " +
+        "Technology Company.",
+
+      answer:
+        "Olakojo Tobiloba Adams is the CEO and Founder of Visual Vertex " +
+        "Technology Company. He is an award-winning developer and has " +
+        "received several medals and recognitions from different " +
+        "technology institutes. He is involved in technology development, " +
+        "innovation, and building practical digital and technology " +
+        "solutions.",
+
+      intents: [
+        "ask_ceo_identity",
+        "ask_founder_identity",
+        "ask_company_owner",
+        "ask_leadership"
+      ],
+
+      entities: ["Olakojo Tobiloba Adams", "CEO", "Founder"],
+
+      keywords: [
+        "ceo",
+        "founder",
+        "owner",
+        "olakojo tobiloba adams",
+        "olakojo adams",
+        "who owns visual vertex",
+        "who is the founder",
+        "who is the ceo",
+        "leadership"
+      ],
+
+      synonyms: [
+        "chief executive officer",
+        "company founder",
+        "company owner",
+        "proprietor"
+      ],
+
+      phrases: [
+        "who dey run this company",
+        "who be the oga at the top",
+        "who own visual vertex",
+        "who be the owner"
+      ],
+
+      questions: [
+        "Who is the CEO?",
+        "Who is the founder of Visual Vertex?",
+        "Who owns Visual Vertex Technology Company?",
+        "Who is Olakojo Tobiloba Adams?",
+        "Who created Visual Vertex?",
+        "Who is behind the company?",
+        "Who runs Visual Vertex?",
+        "Tell me about the CEO.",
+        "Who is the founder and CEO?"
+      ],
+
+      alternativeQuestions: [
+        "Who's in charge of Visual Vertex?",
+        "Who started this company?",
+        "Who is the person behind VSAS?"
+      ],
+
+      relatedTopics: ["company-overview", "company-services", "company-approach"],
+
+      followUpSuggestions: [
+        "Tell me more about Visual Vertex.",
+        "What services does Visual Vertex provide?"
       ]
     },
 
@@ -191,15 +287,16 @@
 
       shortAnswer:
         "Visual Vertex offers graphic design, web development, " +
-        "cybersecurity, data analytics, cloud solutions, software development, tactical millitry hardware and IT " +
-        "consultation.",
+        "cybersecurity, data analytics, cloud solutions, software " +
+        "development, tactical military hardware, and IT consultation.",
 
       answer:
         "Visual Vertex Technology Company provides services and solutions " +
         "across technology and digital fields. These include graphic and " +
         "creative design, web development and digital solutions, " +
-        "cybersecurity services,software development, tactical millitry hardware, data analytics, cloud-related solutions, " +
-        "and IT consultation.",
+        "cybersecurity services, software development, tactical military " +
+        "hardware, data analytics, cloud-related solutions, and IT " +
+        "consultation.",
 
       intents: [
         "ask_services_offered",
@@ -214,6 +311,8 @@
         "cybersecurity",
         "data analytics",
         "cloud solutions",
+        "software development",
+        "tactical military hardware",
         "IT consultation"
       ],
 
@@ -226,7 +325,9 @@
         "visual vertex services",
         "what can visual vertex do",
         "capabilities",
-        "offerings"
+        "offerings",
+        "software development",
+        "tactical military hardware"
       ],
 
       synonyms: [
@@ -262,14 +363,15 @@
         "cybersecurity-services",
         "data-analytics-services",
         "cloud-solutions",
-        "software development", 
-        "tactical military hardware",
+        "software-development-services",
+        "tactical-military-hardware",
         "it-consultation"
       ],
 
       followUpSuggestions: [
         "Do you offer graphic design?",
         "Can you build websites?",
+        "Do you develop software?",
         "Do you offer cybersecurity services?"
       ]
     },
@@ -442,12 +544,120 @@
       relatedTopics: [
         "company-services",
         "graphic-design-services",
+        "software-development-services",
         "cybersecurity-services"
       ],
 
       followUpSuggestions: [
+        "Do you also offer software development?",
         "Do you offer cybersecurity services too?",
         "Can you also design the graphics for my website?"
+      ]
+    },
+
+    /**
+     * --------------------------------------------------------------
+     * SOFTWARE DEVELOPMENT
+     * --------------------------------------------------------------
+     */
+    {
+      id: "software-development-services",
+      category: "services",
+      subcategory: "development",
+      priority: 8,
+      tags: ["software", "development", "applications", "systems"],
+
+      title: "Software Development",
+      summary:
+        "Covers software development, including software systems, " +
+        "custom applications, and digital platforms.",
+
+      shortAnswer:
+        "Yes, Visual Vertex provides software development services, " +
+        "including custom applications, business software, and digital " +
+        "platforms.",
+
+      answer:
+        "Visual Vertex Technology Company provides software development " +
+        "services. This includes working on software systems, custom " +
+        "applications, mobile applications, management systems, and " +
+        "digital platforms based on approved project requirements and " +
+        "technology solutions tailored to client needs.",
+
+      intents: [
+        "ask_if_software_dev_offered",
+        "ask_custom_app_development",
+        "ask_mobile_app_development",
+        "ask_business_software_development",
+        "ask_system_development"
+      ],
+
+      entities: [
+        "software development",
+        "mobile application",
+        "custom application",
+        "management system",
+        "digital platform"
+      ],
+
+      keywords: [
+        "software development",
+        "software",
+        "app development",
+        "mobile app",
+        "android app",
+        "ios app",
+        "custom software",
+        "business software",
+        "management system",
+        "digital platform",
+        "software systems",
+        "application development"
+      ],
+
+      synonyms: [
+        "app development",
+        "application development",
+        "systems development",
+        "custom software development",
+        "programming services"
+      ],
+
+      phrases: [
+        "do you guys build apps",
+        "can una build app for me",
+        "do you people code software",
+        "who dey build our system"
+      ],
+
+      questions: [
+        "Do you develop software?",
+        "Can Visual Vertex build software?",
+        "Do you create mobile applications?",
+        "Can you build an Android app?",
+        "Do you develop business software?",
+        "Can you build a custom application for my company?",
+        "Do you build management systems?",
+        "Do you develop software systems?",
+        "Can you create a digital platform?"
+      ],
+
+      alternativeQuestions: [
+        "Do you guys build apps?",
+        "Can una build app for me?",
+        "Can you develop an iOS app?",
+        "Do you build enterprise software?"
+      ],
+
+      relatedTopics: [
+        "company-services",
+        "web-development-services",
+        "it-consultation"
+      ],
+
+      followUpSuggestions: [
+        "Do you also offer web development?",
+        "Can you provide IT consultation for my software project?"
       ]
     },
 
@@ -524,12 +734,118 @@
       relatedTopics: [
         "company-services",
         "web-development-services",
-        "cloud-solutions"
+        "cloud-solutions",
+        "tactical-military-hardware"
       ],
 
       followUpSuggestions: [
         "Do you also provide cloud solutions?",
         "Can you help with IT consultation?"
+      ]
+    },
+
+    /**
+     * --------------------------------------------------------------
+     * TACTICAL MILITARY HARDWARE
+     * --------------------------------------------------------------
+     */
+    {
+      id: "tactical-military-hardware",
+      category: "services",
+      subcategory: "tactical-technology",
+      priority: 6,
+      tags: ["tactical", "defense-technology", "security-hardware", "authorized-use"],
+
+      title: "Tactical Military Hardware",
+      summary:
+        "Covers tactical and defense-related technology hardware work, " +
+        "subject to authorization and applicable regulations.",
+
+      shortAnswer:
+        "Visual Vertex works on tactical and security-related technology " +
+        "hardware, such as sensor and monitoring systems, for authorized " +
+        "security, defense, tactical, and organizational applications, " +
+        "subject to legal requirements and approved project scope.",
+
+      answer:
+        "Visual Vertex Technology Company works on technology-oriented " +
+        "tactical hardware and security-related hardware solutions. This " +
+        "includes research, development, integration, and technology " +
+        "systems such as sensor systems and monitoring systems for " +
+        "authorized security, defense, tactical, and organizational " +
+        "applications. Any tactical or defense-related technology work is " +
+        "subject to appropriate authorization, legal requirements, project " +
+        "scope, and applicable regulations. Visual Vertex does not " +
+        "manufacture or sell firearms, ammunition, explosives, or other " +
+        "weapons.",
+
+      intents: [
+        "ask_if_military_hardware_offered",
+        "ask_tactical_technology",
+        "ask_defense_technology_support",
+        "ask_security_hardware",
+        "ask_sensor_systems"
+      ],
+
+      entities: [
+        "tactical hardware",
+        "security technology",
+        "sensor systems",
+        "monitoring systems",
+        "defense technology"
+      ],
+
+      keywords: [
+        "tactical military hardware",
+        "military hardware",
+        "tactical hardware",
+        "defense technology",
+        "security hardware",
+        "tactical technology",
+        "sensor systems",
+        "monitoring systems",
+        "hardware integration"
+      ],
+
+      synonyms: [
+        "defense hardware",
+        "tactical equipment technology",
+        "security technology systems",
+        "defense-related technology"
+      ],
+
+      phrases: [
+        "do you guys work with military technology",
+        "una dey work on military equipment",
+        "who handle tactical hardware for una"
+      ],
+
+      questions: [
+        "Do you work on military hardware?",
+        "What is tactical military hardware?",
+        "Does Visual Vertex build tactical technology?",
+        "Do you develop security hardware?",
+        "Do you work with sensors?",
+        "Can Visual Vertex develop tactical systems?",
+        "Do you work on defense technology?",
+        "What kind of tactical hardware do you work on?"
+      ],
+
+      alternativeQuestions: [
+        "Do you guys work with military technology?",
+        "Can you help with monitoring systems for security purposes?",
+        "Is tactical hardware development something you offer?"
+      ],
+
+      relatedTopics: [
+        "company-services",
+        "cybersecurity-services",
+        "it-consultation"
+      ],
+
+      followUpSuggestions: [
+        "Do you also offer cybersecurity services?",
+        "What authorization is required for tactical technology projects?"
       ]
     },
 
@@ -763,6 +1079,7 @@
 
       relatedTopics: [
         "company-services",
+        "software-development-services",
         "data-analytics-services",
         "cloud-solutions"
       ],

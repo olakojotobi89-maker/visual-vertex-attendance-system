@@ -21,6 +21,8 @@
   <link rel="icon" type="image/png" sizes="16x16" href="images/icons/favicon-16.png" />
   <link rel="apple-touch-icon" href="images/icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="css/pwa.css" />
+  <!-- Vertex AI Assistant styles (loaded alongside, does not replace VSAS CSS) -->
+  <link rel="stylesheet" href="./vertex-ai/css/Vertex.css" />
   <script src="js/pwa.js"></script>
 </head>
 <body class="dashboard-body">
@@ -314,43 +316,97 @@
 
     </main>
   </div>
+
   <!-- ================================================================
      VERTEX AI ASSISTANT
-     Reusable floating assistant interface
+     Reusable floating assistant interface.
+     The fragment (markup only) is fetched and injected into this
+     mounting point, then the Vertex AI JS modules are loaded in
+     order — only AFTER the fragment exists in the DOM — so
+     vertex-ai-ui.js / vertex-ai.js never look for #vertex-ai-launcher,
+     #vertex-ai-panel, #vertex-ai-input, #vertex-ai-messages, etc.
+     before those elements have been inserted.
      ================================================================ -->
-<div id="vertex-ai-container"></div>
+  <div id="vertex-ai-container"></div>
 
-<script>
-(function () {
-  "use strict";
+  <script>
+  (function () {
+    "use strict";
 
-  const container = document.getElementById("vertex-ai-container");
+    // Order matters: config/security/cache first, then knowledge data,
+    // then search/voice/ui, then the vertex-ai.js orchestrator LAST.
+    var VERTEX_SCRIPTS = [
+      "./vertex-ai/js/vertex-ai-config.js",
+      "./vertex-ai/js/vertex-ai-security.js",
+      "./vertex-ai/js/vertex-ai-cache.js",
+      "./vertex-ai/knowledge/company-knowledge.js",
+      "./vertex-ai/knowledge/vsas-knowledge.js",
+      "./vertex-ai/knowledge/internship-knowledge.js",
+      "./vertex-ai/knowledge/knowledge-index.js",
+      "./vertex-ai/js/vertex-ai-search.js",
+      "./vertex-ai/js/vertex-ai-voice.js",
+      "./vertex-ai/js/vertex-ai-ui.js",
+      "./vertex-ai/js/vertex-ai.js"
+    ];
 
-  if (!container) {
-    console.error("[Vertex AI] Container not found.");
-    return;
-  }
+    function loadScript(src) {
+      return new Promise(function (resolve, reject) {
+        var script = document.createElement("script");
+        script.src = src;
+        script.async = false; // preserve execution order within the chain
+        script.onload = function () {
+          resolve();
+        };
+        script.onerror = function () {
+          console.error("[Vertex AI] Failed to load script:", src);
+          reject(new Error("Failed to load " + src));
+        };
+        document.body.appendChild(script);
+      });
+    }
 
-  fetch("./vertex-ai/vertex-ai.html")
-    .then(function (response) {
-      if (!response.ok) {
-        throw new Error(
-          "Failed to load Vertex AI interface: HTTP " + response.status
-        );
-      }
+    function loadScriptsSequentially(list) {
+      return list.reduce(function (chain, src) {
+        return chain.then(function () {
+          return loadScript(src);
+        });
+      }, Promise.resolve());
+    }
 
-      return response.text();
-    })
-    .then(function (html) {
-      container.innerHTML = html;
+    var container = document.getElementById("vertex-ai-container");
 
-      console.log("[Vertex AI] Interface loaded successfully.");
-    })
-    .catch(function (error) {
-      console.error("[Vertex AI] Interface failed to load:", error);
-    });
-})();
-</script>
+    if (!container) {
+      console.error("[Vertex AI] Mounting point #vertex-ai-container not found.");
+      return;
+    }
+
+    fetch("./vertex-ai/vertex-ai.html")
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("Failed to load Vertex AI interface: HTTP " + response.status);
+        }
+        return response.text();
+      })
+      .then(function (html) {
+        // Insert the fragment's markup FIRST. Its own <script> tags (if any)
+        // will not execute via innerHTML — that's fine, since dashboard.html
+        // is responsible for loading the Vertex AI JS modules explicitly.
+        container.innerHTML = html;
+        console.log("[Vertex AI] Interface fragment inserted into DOM.");
+
+        // Only now — with #vertex-ai-launcher, #vertex-ai-panel,
+        // #vertex-ai-input, #vertex-ai-messages, #vertex-ai-root etc.
+        // guaranteed to exist — load the JS modules in order.
+        return loadScriptsSequentially(VERTEX_SCRIPTS);
+      })
+      .then(function () {
+        console.log("[Vertex AI] All modules loaded; assistant initialized.");
+      })
+      .catch(function (error) {
+        console.error("[Vertex AI] Initialization failed:", error);
+      });
+  })();
+  </script>
 
   <!-- Load order: Supabase CDN -> PDF libs -> supabase.js (client init) -> auth.js (session/guards) -> main.js -> dashboard.js (page logic) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -363,35 +419,5 @@
   <script src="js/main.js"></script>
   <script src="js/notifications.js"></script>
   <script src="js/dashboard.js"></script>
-  <!-- ================================================================
-     VERTEX AI MODULES
-     ================================================================ -->
-
-<!-- Configuration -->
-<script src="./vertex-ai/js/vertex-ai-config.js"></script>
-
-<!-- Security -->
-<script src="./vertex-ai/js/vertex-ai-security.js"></script>
-
-<!-- Cache -->
-<script src="./vertex-ai/js/vertex-ai-cache.js"></script>
-
-<!-- Knowledge -->
-<script src="./vertex-ai/knowledge/company-knowledge.js"></script>
-<script src="./vertex-ai/knowledge/vsas-knowledge.js"></script>
-<script src="./vertex-ai/knowledge/internship-knowledge.js"></script>
-<script src="./vertex-ai/knowledge/knowledge-index.js"></script>
-
-<!-- Search -->
-<script src="./vertex-ai/js/vertex-ai-search.js"></script>
-
-<!-- Voice -->
-<script src="./vertex-ai/js/vertex-ai-voice.js"></script>
-
-<!-- UI -->
-<script src="./vertex-ai/js/vertex-ai-ui.js"></script>
-
-<!-- Main Vertex AI orchestrator — ALWAYS LAST -->
-<script src="./vertex-ai/js/vertex-ai.js"></script>
 </body>
 </html>

@@ -1,707 +1,1532 @@
+```javascript
 /**
  * Vertex AI Assistant — Main Orchestrator
  * ----------------------------------------------------------------------
- * Central controller for the internal Vertex AI assistant.
+ * Visual Vertex Technology Company
  *
- * This module connects:
+ * Central controller for the Vertex AI assistant.
  *
- *   vertex-ai-ui.js
- *          ↓
- *   vertex-ai-security.js
- *          ↓
- *   vertex-ai-cache.js
- *          ↓
- *   vertex-ai-search.js
- *          ↓
- *   vertex-ai-voice.js
+ * Pipeline:
  *
- * This is the orchestration layer.
+ *   User Question
+ *        ↓
+ *   Security Validation
+ *        ↓
+ *   Cache
+ *        ↓
+ *   Response Engine
+ *        ↓
+ *   Existing Knowledge Search
+ *        ↓
+ *   Verified Response
+ *        ↓
+ *   UI
+ *        ↓
+ *   Optional Voice
  *
- * It does NOT:
+ * This module does NOT:
  * - contain API keys
  * - make external AI calls
  * - directly query Supabase
  * - implement authentication
  * - implement RLS
- * - contain the knowledge database
- * - implement the voice provider
- *
- * Those responsibilities belong to their respective modules.
+ * - contain the complete knowledge database
+ * - implement voice generation
  * ----------------------------------------------------------------------
  */
 
 (function () {
   "use strict";
 
-  const CONFIG = window.VertexAIConfig || {};
 
-  const assistantConfig = CONFIG.assistant || {};
+  /* ================================================================
+     CONFIGURATION
+     ================================================================ */
+
+  const CONFIG =
+    window.VertexAIConfig || {};
+
+  const assistantConfig =
+    CONFIG.assistant || {};
 
   const MOCK_DELAY_MS =
-    Number(assistantConfig.mockResponseDelayMs) >= 0
-      ? Number(assistantConfig.mockResponseDelayMs)
+    Number(
+      assistantConfig.mockResponseDelayMs
+    ) >= 0
+      ? Number(
+          assistantConfig.mockResponseDelayMs
+        )
       : 450;
 
+
   const MAX_QUESTION_LENGTH =
-    Number(assistantConfig.maxQuestionLength) > 0
-      ? Number(assistantConfig.maxQuestionLength)
+    Number(
+      assistantConfig.maxQuestionLength
+    ) > 0
+      ? Number(
+          assistantConfig.maxQuestionLength
+        )
       : 500;
+
 
   const UNKNOWN_RESPONSE =
     assistantConfig.unknownResponse ||
-    "I could not find an approved answer to that question in the current Vertex AI knowledge base.";
+    "I could not find enough approved information to answer that question reliably.";
 
-  const TEMPORARY_RESPONSE =
-    "Vertex AI knowledge retrieval is connected in development mode. " +
-    "The interface is ready for the production company knowledge engine.";
 
   let initialized = false;
+
   let busy = false;
+
   let lastAssistantResponse = "";
+
   let responseTimer = null;
 
-  /**
-   * --------------------------------------------------------------------
-   * Module availability helpers
-   * --------------------------------------------------------------------
-   */
+
+  /* ================================================================
+     MODULE ACCESS
+     ================================================================ */
 
   function getUI() {
+
     return window.VertexAIUI || null;
+
   }
+
 
   function getSecurity() {
+
     return window.VertexAISecurity || null;
+
   }
+
 
   function getCache() {
+
     return window.VertexAICache || null;
+
   }
+
 
   function getSearch() {
+
     return window.VertexAISearch || null;
+
   }
+
 
   function getVoice() {
+
     return window.VertexAIVoice || null;
+
   }
 
-  /**
-   * --------------------------------------------------------------------
-   * Question validation
-   * --------------------------------------------------------------------
-   */
+
+  function getResponseEngine() {
+
+    return (
+      window.VertexAIResponseEngine ||
+      null
+    );
+
+  }
+
+
+  /* ================================================================
+     QUESTION VALIDATION
+     ================================================================ */
 
   function validateQuestion(question) {
-    const security = getSecurity();
 
-    if (security && typeof security.validateQuestion === "function") {
-      const result = security.validateQuestion(question);
+    const security =
+      getSecurity();
 
-      if (!result || result.valid !== true) {
+
+    if (
+      security &&
+      typeof security.validateQuestion ===
+        "function"
+    ) {
+
+      const result =
+        security.validateQuestion(
+          question
+        );
+
+
+      if (
+        !result ||
+        result.valid !== true
+      ) {
+
         return {
           valid: false,
           value: "",
           reason:
-            result && result.reason
+            result &&
+            result.reason
               ? result.reason
               : "Question failed validation."
         };
+
       }
+
 
       return {
         valid: true,
-        value: String(result.value).slice(
-          0,
-          MAX_QUESTION_LENGTH
-        )
+
+        value:
+          String(
+            result.value || ""
+          ).slice(
+            0,
+            MAX_QUESTION_LENGTH
+          )
       };
+
     }
 
-    const value = String(question || "")
-      .trim()
-      .slice(0, MAX_QUESTION_LENGTH);
+
+    const value =
+      String(
+        question || ""
+      )
+        .trim()
+        .slice(
+          0,
+          MAX_QUESTION_LENGTH
+        );
+
 
     if (!value) {
+
       return {
         valid: false,
         value: "",
-        reason: "Question is empty."
+        reason:
+          "Question is empty."
       };
+
     }
+
 
     return {
       valid: true,
       value
     };
+
   }
 
-  /**
-   * --------------------------------------------------------------------
-   * Cache lookup
-   * --------------------------------------------------------------------
-   */
+
+  /* ================================================================
+     CACHE
+     ================================================================ */
 
   function getCachedAnswer(question) {
-    const cache = getCache();
 
-    if (!cache || typeof cache.get !== "function") {
-      return null;
-    }
+    const cache =
+      getCache();
 
-    const cached = cache.get(question);
-
-    if (cached === null || cached === undefined) {
-      return null;
-    }
 
     if (
-      typeof cached === "object" &&
-      cached !== null &&
-      Object.prototype.hasOwnProperty.call(cached, "answer")
+      !cache ||
+      typeof cache.get !==
+        "function"
     ) {
-      return cached.answer || null;
-    }
 
-    return typeof cached === "string"
-      ? cached
-      : null;
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Search knowledge
-   * --------------------------------------------------------------------
-   */
-
-  function retrieveKnowledge(question) {
-    const search = getSearch();
-
-    if (!search) {
       return null;
+
     }
 
-    if (typeof search.retrieve === "function") {
-      return search.retrieve(question);
-    }
 
-    if (typeof search.findBestMatch === "function") {
-      const result = search.findBestMatch(question);
+    try {
 
-      if (!result) {
-        return null;
-      }
+      const cached =
+        cache.get(question);
 
-      return {
-        source: "knowledge",
-        cached: false,
-        query: question,
-        answer: result.content,
-        result
-      };
-    }
-
-    return null;
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Generate temporary development response
-   * --------------------------------------------------------------------
-   *
-   * This exists only until the production AI/knowledge generation layer
-   * is connected.
-   */
-
-  function createTemporaryResponse(question, retrieval) {
-    /*
-     * If the local knowledge search found an approved answer,
-     * return that answer.
-     */
-    if (
-      retrieval &&
-      typeof retrieval.answer === "string" &&
-      retrieval.answer.trim()
-    ) {
-      return retrieval.answer.trim();
-    }
-
-    /*
-     * Clearly marked development fallback.
-     *
-     * This must never pretend to be a real AI-generated answer.
-     */
-    if (CONFIG.development && CONFIG.development.mockResponses === true) {
-      return TEMPORARY_RESPONSE;
-    }
-
-    return UNKNOWN_RESPONSE;
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Voice
-   * --------------------------------------------------------------------
-   */
-
-  function speakResponse(text) {
-    const voice = getVoice();
-
-    if (!voice || typeof voice.speak !== "function") {
-      return false;
-    }
-
-    if (
-      typeof voice.voiceEnabled === "function" &&
-      !voice.voiceEnabled()
-    ) {
-      return false;
-    }
-
-    return voice.speak(text);
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Add assistant message
-   * --------------------------------------------------------------------
-   */
-
-  function addAssistantMessage(text) {
-    const ui = getUI();
-
-    if (!ui || typeof ui.addMessage !== "function") {
-      return false;
-    }
-
-    ui.addMessage("assistant", text);
-
-    lastAssistantResponse = text;
-
-    return true;
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Add user message
-   * --------------------------------------------------------------------
-   */
-
-  function addUserMessage(text) {
-    const ui = getUI();
-
-    if (!ui || typeof ui.addMessage !== "function") {
-      return false;
-    }
-
-    ui.addMessage("user", text);
-
-    return true;
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Typing indicator
-   * --------------------------------------------------------------------
-   */
-
-  function showTyping() {
-    const ui = getUI();
-
-    if (ui && typeof ui.showTyping === "function") {
-      ui.showTyping();
-    }
-  }
-
-  function hideTyping() {
-    const ui = getUI();
-
-    if (ui && typeof ui.hideTyping === "function") {
-      ui.hideTyping();
-    }
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Update assistant status
-   * --------------------------------------------------------------------
-   */
-
-  function setStatus(status) {
-    const root = document.querySelector("#vertex-ai-root");
-
-    if (!root) {
-      return;
-    }
-
-    const statusElement =
-      root.querySelector("#vertex-ai-status");
-
-    if (!statusElement) {
-      return;
-    }
-
-    /*
-     * Status strings originate internally.
-     * textContent prevents HTML injection.
-     */
-    statusElement.textContent = String(status || "");
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Process a question
-   * --------------------------------------------------------------------
-   */
-
-  function processQuestion(question) {
-    if (busy) {
-      return Promise.resolve(false);
-    }
-
-    const validation = validateQuestion(question);
-
-    if (!validation.valid) {
-      const ui = getUI();
 
       if (
-        ui &&
-        typeof ui.addMessage === "function"
+        cached === null ||
+        cached === undefined
       ) {
-        ui.addMessage(
-          "system",
-          validation.reason || "Please enter a valid question."
-        );
+
+        return null;
+
       }
 
-      return Promise.resolve(false);
+
+      if (
+        typeof cached ===
+          "object" &&
+        cached !== null &&
+        Object.prototype.hasOwnProperty.call(
+          cached,
+          "answer"
+        )
+      ) {
+
+        return (
+          cached.answer ||
+          null
+        );
+
+      }
+
+
+      if (
+        typeof cached ===
+        "string"
+      ) {
+
+        return cached;
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "[Vertex AI] Cache read failed:",
+        error
+      );
+
     }
 
-    const cleanQuestion = validation.value;
 
-    busy = true;
+    return null;
 
-    addUserMessage(cleanQuestion);
+  }
 
-    showTyping();
-    setStatus("Searching approved knowledge...");
 
-    /*
-     * Give the browser a chance to render the user message and typing
-     * indicator before doing retrieval work.
-     */
-    return new Promise(function (resolve) {
-      responseTimer = window.setTimeout(function () {
-        try {
-          /*
-           * ----------------------------------------------------------
-           * STEP 1 — Cache
-           * ----------------------------------------------------------
-           */
+  function cacheAnswer(
+    question,
+    answer,
+    result
+  ) {
 
-          const cachedAnswer =
-            getCachedAnswer(cleanQuestion);
+    const cache =
+      getCache();
 
-          if (cachedAnswer) {
-            finishResponse(
-              cachedAnswer,
-              "Answered from cache"
-            );
 
-            resolve(true);
-            return;
-          }
+    if (
+      !cache ||
+      typeof cache.set !==
+        "function"
+    ) {
 
-          /*
-           * ----------------------------------------------------------
-           * STEP 2 — Knowledge retrieval
-           * ----------------------------------------------------------
-           */
+      return;
 
-          const retrieval =
-            retrieveKnowledge(cleanQuestion);
+    }
 
-          const answer =
-            createTemporaryResponse(
-              cleanQuestion,
-              retrieval
-            );
 
-          /*
-           * ----------------------------------------------------------
-           * STEP 3 — Store successful answer
-           * ----------------------------------------------------------
-           */
+    try {
 
-          if (
-            retrieval &&
-            retrieval.answer &&
-            getCache() &&
-            typeof getCache().set === "function"
-          ) {
-            getCache().set(cleanQuestion, {
-              answer,
-              result: retrieval.result || null
-            });
-          }
-
-          finishResponse(
-            answer,
-            retrieval && retrieval.result
-              ? "Answered from approved knowledge"
-              : "Knowledge match not found"
-          );
-
-          resolve(true);
-        } catch (error) {
-          console.error(
-            "[Vertex AI] Response processing error:",
-            error
-          );
-
-          finishResponse(
-            "Vertex AI encountered a temporary problem while processing that question.",
-            "Temporary error"
-          );
-
-          resolve(false);
+      cache.set(
+        question,
+        {
+          answer,
+          result:
+            result || null
         }
-      }, MOCK_DELAY_MS);
-    });
+      );
+
+    } catch (error) {
+
+      console.warn(
+        "[Vertex AI] Cache write failed:",
+        error
+      );
+
+    }
+
   }
 
-  /**
-   * --------------------------------------------------------------------
-   * Finish response
-   * --------------------------------------------------------------------
-   */
 
-  function finishResponse(answer, status) {
-    hideTyping();
+  /* ================================================================
+     EXISTING KNOWLEDGE SEARCH
+     ================================================================ */
 
-    setStatus(status || "Ready to help");
+  function retrieveKnowledge(
+    question
+  ) {
 
-    addAssistantMessage(answer);
+    const search =
+      getSearch();
+
+
+    if (!search) {
+
+      return null;
+
+    }
+
+
+    try {
+
+      if (
+        typeof search.retrieve ===
+        "function"
+      ) {
+
+        return search.retrieve(
+          question
+        );
+
+      }
+
+
+      if (
+        typeof search.findBestMatch ===
+        "function"
+      ) {
+
+        const result =
+          search.findBestMatch(
+            question
+          );
+
+
+        if (!result) {
+
+          return null;
+
+        }
+
+
+        return {
+
+          source:
+            "knowledge",
+
+          cached: false,
+
+          query:
+            question,
+
+          answer:
+            result.content ||
+            result.answer ||
+            result.text ||
+            "",
+
+          result
+
+        };
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "[Vertex AI] Knowledge retrieval failed:",
+        error
+      );
+
+    }
+
+
+    return null;
+
+  }
+
+
+  /* ================================================================
+     RESPONSE ENGINE
+     ================================================================ */
+
+  function generateResponse(
+    question,
+    retrieval
+  ) {
+
+    const engine =
+      getResponseEngine();
+
 
     /*
-     * Voice is deliberately optional.
+     * --------------------------------------------------------------
+     * PRIMARY RESPONSE ENGINE
+     * --------------------------------------------------------------
      */
-    speakResponse(answer);
 
-    busy = false;
-    responseTimer = null;
-  }
+    if (
+      engine &&
+      typeof engine.respond ===
+        "function"
+    ) {
 
-  /**
-   * --------------------------------------------------------------------
-   * Stop current processing
-   * --------------------------------------------------------------------
-   */
+      try {
 
-  function cancelPendingResponse() {
-    if (responseTimer !== null) {
-      window.clearTimeout(responseTimer);
-      responseTimer = null;
+        const result =
+          engine.respond(
+            question,
+            {
+              retrieval:
+                retrieval || null
+            }
+          );
+
+
+        if (
+          result &&
+          result.success === true &&
+          typeof result.text ===
+            "string" &&
+          result.text.trim()
+        ) {
+
+          return {
+
+            answer:
+              result.text.trim(),
+
+            source:
+              result.source ||
+              "response-engine",
+
+            intent:
+              result.intent ||
+              "unknown",
+
+            confidence:
+              Number(
+                result.confidence || 0
+              ),
+
+            result
+
+          };
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          "[Vertex AI] Response Engine error:",
+          error
+        );
+
+      }
+
     }
 
-    hideTyping();
-
-    busy = false;
-
-    setStatus("Ready to help");
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Replay last assistant response
-   * --------------------------------------------------------------------
-   */
-
-  function replayLastResponse() {
-    if (!lastAssistantResponse) {
-      return false;
-    }
-
-    const voice = getVoice();
-
-    if (!voice) {
-      return false;
-    }
-
-    if (typeof voice.replay === "function") {
-      return voice.replay();
-    }
-
-    if (typeof voice.speak === "function") {
-      return voice.speak(lastAssistantResponse);
-    }
-
-    return false;
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Clear conversation
-   * --------------------------------------------------------------------
-   */
-
-  function clearConversation() {
-    cancelPendingResponse();
-
-    lastAssistantResponse = "";
-
-    const ui = getUI();
-
-    if (ui && typeof ui.clearConversation === "function") {
-      ui.clearConversation();
-    }
-
-    setStatus("Ready to help");
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Open assistant
-   * --------------------------------------------------------------------
-   */
-
-  function open() {
-    const ui = getUI();
-
-    if (ui && typeof ui.open === "function") {
-      ui.open();
-    }
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Close assistant
-   * --------------------------------------------------------------------
-   */
-
-  function close() {
-    const ui = getUI();
-
-    if (ui && typeof ui.close === "function") {
-      ui.close();
-    }
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Toggle assistant
-   * --------------------------------------------------------------------
-   */
-
-  function toggle() {
-    const ui = getUI();
-
-    if (ui && typeof ui.toggle === "function") {
-      ui.toggle();
-    }
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Get state
-   * --------------------------------------------------------------------
-   */
-
-  function getState() {
-    return Object.freeze({
-      initialized,
-      busy,
-      hasLastResponse: Boolean(lastAssistantResponse),
-      modules: Object.freeze({
-        ui: Boolean(getUI()),
-        security: Boolean(getSecurity()),
-        cache: Boolean(getCache()),
-        search: Boolean(getSearch()),
-        voice: Boolean(getVoice())
-      })
-    });
-  }
-
-  /**
-   * --------------------------------------------------------------------
-   * Initialize
-   * --------------------------------------------------------------------
-   */
-
-  function init() {
-    if (initialized) {
-      return getState();
-    }
 
     /*
-     * Initialize supporting modules if they expose init().
+     * --------------------------------------------------------------
+     * SECONDARY FALLBACK
+     * --------------------------------------------------------------
+     *
+     * If the Response Engine is unavailable but the existing search
+     * system has an approved answer, use it.
      */
-    const cache = getCache();
 
     if (
-      cache &&
-      typeof cache.init === "function"
+      retrieval &&
+      typeof retrieval.answer ===
+        "string" &&
+      retrieval.answer.trim()
     ) {
-      cache.init();
+
+      return {
+
+        answer:
+          retrieval.answer.trim(),
+
+        source:
+          "approved-knowledge",
+
+        intent:
+          "knowledge",
+
+        confidence:
+          0.70,
+
+        result:
+          retrieval.result ||
+          null
+
+      };
+
     }
 
-    const voice = getVoice();
+
+    /*
+     * --------------------------------------------------------------
+     * FINAL FALLBACK
+     * --------------------------------------------------------------
+     */
+
+    return {
+
+      answer:
+        UNKNOWN_RESPONSE,
+
+      source:
+        "fallback",
+
+      intent:
+        "unknown",
+
+      confidence:
+        0,
+
+      result:
+        null
+
+    };
+
+  }
+
+
+  /* ================================================================
+     VOICE
+     ================================================================ */
+
+  function speakResponse(
+    text
+  ) {
+
+    const voice =
+      getVoice();
+
 
     if (
-      voice &&
-      typeof voice.init === "function"
+      !voice ||
+      typeof voice.speak !==
+        "function"
     ) {
-      voice.init();
+
+      return false;
+
     }
 
-    const ui = getUI();
+
+    try {
+
+      if (
+        typeof voice.voiceEnabled ===
+          "function" &&
+        !voice.voiceEnabled()
+      ) {
+
+        return false;
+
+      }
+
+
+      return voice.speak(
+        text
+      );
+
+    } catch (error) {
+
+      console.warn(
+        "[Vertex AI] Voice failed:",
+        error
+      );
+
+      return false;
+
+    }
+
+  }
+
+
+  /* ================================================================
+     UI
+     ================================================================ */
+
+  function addAssistantMessage(
+    text
+  ) {
+
+    const ui =
+      getUI();
+
+
+    if (
+      !ui ||
+      typeof ui.addMessage !==
+        "function"
+    ) {
+
+      return false;
+
+    }
+
+
+    ui.addMessage(
+      "assistant",
+      text
+    );
+
+
+    lastAssistantResponse =
+      text;
+
+
+    return true;
+
+  }
+
+
+  function addUserMessage(
+    text
+  ) {
+
+    const ui =
+      getUI();
+
+
+    if (
+      !ui ||
+      typeof ui.addMessage !==
+        "function"
+    ) {
+
+      return false;
+
+    }
+
+
+    ui.addMessage(
+      "user",
+      text
+    );
+
+
+    return true;
+
+  }
+
+
+  function showTyping() {
+
+    const ui =
+      getUI();
+
 
     if (
       ui &&
-      typeof ui.init === "function"
+      typeof ui.showTyping ===
+        "function"
     ) {
-      ui.init({
-        onSubmit: processQuestion
-      });
+
+      ui.showTyping();
+
     }
+
+  }
+
+
+  function hideTyping() {
+
+    const ui =
+      getUI();
+
+
+    if (
+      ui &&
+      typeof ui.hideTyping ===
+        "function"
+    ) {
+
+      ui.hideTyping();
+
+    }
+
+  }
+
+
+  /* ================================================================
+     STATUS
+     ================================================================ */
+
+  function setStatus(
+    status
+  ) {
+
+    const root =
+      document.querySelector(
+        "#vertex-ai-root"
+      );
+
+
+    if (!root) {
+
+      return;
+
+    }
+
+
+    const statusElement =
+      root.querySelector(
+        "#vertex-ai-status"
+      );
+
+
+    if (!statusElement) {
+
+      return;
+
+    }
+
+
+    statusElement.textContent =
+      String(
+        status || ""
+      );
+
+  }
+
+
+  /* ================================================================
+     PROCESS QUESTION
+     ================================================================ */
+
+  function processQuestion(
+    question
+  ) {
+
+    if (busy) {
+
+      return Promise.resolve(
+        false
+      );
+
+    }
+
+
+    const validation =
+      validateQuestion(
+        question
+      );
+
+
+    if (!validation.valid) {
+
+      const ui =
+        getUI();
+
+
+      if (
+        ui &&
+        typeof ui.addMessage ===
+          "function"
+      ) {
+
+        ui.addMessage(
+          "system",
+          validation.reason ||
+            "Please enter a valid question."
+        );
+
+      }
+
+
+      return Promise.resolve(
+        false
+      );
+
+    }
+
+
+    const cleanQuestion =
+      validation.value;
+
+
+    busy = true;
+
+
+    addUserMessage(
+      cleanQuestion
+    );
+
+
+    showTyping();
+
+
+    setStatus(
+      "Thinking..."
+    );
+
+
+    return new Promise(
+      function (resolve) {
+
+        responseTimer =
+          window.setTimeout(
+            function () {
+
+              try {
+
+                /* ==================================================
+                   STEP 1 — CACHE
+                   ================================================== */
+
+                const cachedAnswer =
+                  getCachedAnswer(
+                    cleanQuestion
+                  );
+
+
+                if (cachedAnswer) {
+
+                  finishResponse(
+                    cachedAnswer,
+                    "Answered from cache"
+                  );
+
+
+                  resolve(true);
+
+                  return;
+
+                }
+
+
+                /* ==================================================
+                   STEP 2 — EXISTING KNOWLEDGE
+                   ================================================== */
+
+                setStatus(
+                  "Searching approved knowledge..."
+                );
+
+
+                const retrieval =
+                  retrieveKnowledge(
+                    cleanQuestion
+                  );
+
+
+                /* ==================================================
+                   STEP 3 — RESPONSE ENGINE
+                   ================================================== */
+
+                setStatus(
+                  "Preparing your answer..."
+                );
+
+
+                const generated =
+                  generateResponse(
+                    cleanQuestion,
+                    retrieval
+                  );
+
+
+                const answer =
+                  generated.answer;
+
+
+                /* ==================================================
+                   STEP 4 — CACHE GOOD ANSWERS
+                   ================================================== */
+
+                if (
+                  generated.confidence >=
+                    0.50 &&
+                  answer &&
+                  answer !==
+                    UNKNOWN_RESPONSE
+                ) {
+
+                  cacheAnswer(
+                    cleanQuestion,
+                    answer,
+                    generated.result
+                  );
+
+                }
+
+
+                /* ==================================================
+                   STEP 5 — SEND TO UI
+                   ================================================== */
+
+                let status =
+                  "Ready to help";
+
+
+                if (
+                  generated.source ===
+                  "visual-vertex-knowledge"
+                ) {
+
+                  status =
+                    "Answered from Visual Vertex knowledge";
+
+                }
+
+                else if (
+                  generated.source ===
+                  "vertex-ai-search"
+                ) {
+
+                  status =
+                    "Answered from approved knowledge";
+
+                }
+
+                else if (
+                  generated.source ===
+                  "vertex-ai-search"
+                ) {
+
+                  status =
+                    "Answered from knowledge";
+
+                }
+
+                else if (
+                  generated.source ===
+                  "fallback"
+                ) {
+
+                  status =
+                    "Ready to help";
+
+                }
+
+
+                finishResponse(
+                  answer,
+                  status
+                );
+
+
+                /*
+                 * Development logging
+                 */
+
+                if (
+                  CONFIG.development &&
+                  CONFIG.development.consoleLogging ===
+                    true
+                ) {
+
+                  console.info(
+                    "[Vertex AI] Response:",
+                    {
+                      question:
+                        cleanQuestion,
+
+                      intent:
+                        generated.intent,
+
+                      confidence:
+                        generated.confidence,
+
+                      source:
+                        generated.source
+                    }
+                  );
+
+                }
+
+
+                resolve(true);
+
+              } catch (error) {
+
+                console.error(
+                  "[Vertex AI] Response processing error:",
+                  error
+                );
+
+
+                finishResponse(
+
+                  "I encountered a temporary problem while processing that question. Please try again.",
+
+                  "Temporary error"
+
+                );
+
+
+                resolve(false);
+
+              }
+
+            },
+
+            MOCK_DELAY_MS
+
+          );
+
+      }
+
+    );
+
+  }
+
+
+  /* ================================================================
+     FINISH RESPONSE
+     ================================================================ */
+
+  function finishResponse(
+    answer,
+    status
+  ) {
+
+    hideTyping();
+
+
+    setStatus(
+      status ||
+        "Ready to help"
+    );
+
+
+    addAssistantMessage(
+      answer
+    );
+
+
+    /*
+     * Voice remains optional.
+     */
+
+    speakResponse(
+      answer
+    );
+
+
+    busy = false;
+
+    responseTimer = null;
+
+  }
+
+
+  /* ================================================================
+     CANCEL
+     ================================================================ */
+
+  function cancelPendingResponse() {
+
+    if (
+      responseTimer !==
+      null
+    ) {
+
+      window.clearTimeout(
+        responseTimer
+      );
+
+      responseTimer =
+        null;
+
+    }
+
+
+    hideTyping();
+
+
+    busy = false;
+
+
+    setStatus(
+      "Ready to help"
+    );
+
+  }
+
+
+  /* ================================================================
+     REPLAY
+     ================================================================ */
+
+  function replayLastResponse() {
+
+    if (
+      !lastAssistantResponse
+    ) {
+
+      return false;
+
+    }
+
+
+    const voice =
+      getVoice();
+
+
+    if (!voice) {
+
+      return false;
+
+    }
+
+
+    if (
+      typeof voice.replay ===
+        "function"
+    ) {
+
+      return voice.replay();
+
+    }
+
+
+    if (
+      typeof voice.speak ===
+        "function"
+    ) {
+
+      return voice.speak(
+        lastAssistantResponse
+      );
+
+    }
+
+
+    return false;
+
+  }
+
+
+  /* ================================================================
+     CLEAR CONVERSATION
+     ================================================================ */
+
+  function clearConversation() {
+
+    cancelPendingResponse();
+
+
+    lastAssistantResponse =
+      "";
+
+
+    const engine =
+      getResponseEngine();
+
+
+    /*
+     * Clear the Response Engine's conversation memory.
+     */
+
+    if (
+      engine &&
+      typeof engine.clearHistory ===
+        "function"
+    ) {
+
+      engine.clearHistory();
+
+    }
+
+
+    const ui =
+      getUI();
+
+
+    if (
+      ui &&
+      typeof ui.clearConversation ===
+        "function"
+    ) {
+
+      ui.clearConversation();
+
+    }
+
+
+    setStatus(
+      "Ready to help"
+    );
+
+  }
+
+
+  /* ================================================================
+     OPEN / CLOSE / TOGGLE
+     ================================================================ */
+
+  function open() {
+
+    const ui =
+      getUI();
+
+
+    if (
+      ui &&
+      typeof ui.open ===
+        "function"
+    ) {
+
+      ui.open();
+
+    }
+
+  }
+
+
+  function close() {
+
+    const ui =
+      getUI();
+
+
+    if (
+      ui &&
+      typeof ui.close ===
+        "function"
+    ) {
+
+      ui.close();
+
+    }
+
+  }
+
+
+  function toggle() {
+
+    const ui =
+      getUI();
+
+
+    if (
+      ui &&
+      typeof ui.toggle ===
+        "function"
+    ) {
+
+      ui.toggle();
+
+    }
+
+  }
+
+
+  /* ================================================================
+     STATE
+     ================================================================ */
+
+  function getState() {
+
+    return Object.freeze({
+
+      initialized,
+
+      busy,
+
+      hasLastResponse:
+        Boolean(
+          lastAssistantResponse
+        ),
+
+      modules:
+        Object.freeze({
+
+          ui:
+            Boolean(
+              getUI()
+            ),
+
+          security:
+            Boolean(
+              getSecurity()
+            ),
+
+          cache:
+            Boolean(
+              getCache()
+            ),
+
+          search:
+            Boolean(
+              getSearch()
+            ),
+
+          voice:
+            Boolean(
+              getVoice()
+            ),
+
+          responseEngine:
+            Boolean(
+              getResponseEngine()
+            )
+
+        })
+
+    });
+
+  }
+
+
+  /* ================================================================
+     INITIALIZATION
+     ================================================================ */
+
+  function init() {
+
+    if (initialized) {
+
+      return getState();
+
+    }
+
+
+    /*
+     * Cache
+     */
+
+    const cache =
+      getCache();
+
+
+    if (
+      cache &&
+      typeof cache.init ===
+        "function"
+    ) {
+
+      try {
+
+        cache.init();
+
+      } catch (error) {
+
+        console.warn(
+          "[Vertex AI] Cache initialization failed:",
+          error
+        );
+
+      }
+
+    }
+
+
+    /*
+     * Voice
+     */
+
+    const voice =
+      getVoice();
+
+
+    if (
+      voice &&
+      typeof voice.init ===
+        "function"
+    ) {
+
+      try {
+
+        voice.init();
+
+      } catch (error) {
+
+        console.warn(
+          "[Vertex AI] Voice initialization failed:",
+          error
+        );
+
+      }
+
+    }
+
+
+    /*
+     * UI
+     */
+
+    const ui =
+      getUI();
+
+
+    if (
+      ui &&
+      typeof ui.init ===
+        "function"
+    ) {
+
+      try {
+
+        ui.init({
+
+          onSubmit:
+            processQuestion
+
+        });
+
+      } catch (error) {
+
+        console.error(
+          "[Vertex AI] UI initialization failed:",
+          error
+        );
+
+      }
+
+    }
+
 
     initialized = true;
 
-    setStatus("Ready to help");
 
-    if (
-      CONFIG.development &&
-      CONFIG.development.consoleLogging === true
-    ) {
-      console.info(
-        "[Vertex AI] Main orchestrator initialized.",
-        getState()
-      );
-    }
+    setStatus(
+      "Ready to help"
+    );
+
+
+    console.info(
+      "[Vertex AI] Main orchestrator initialized."
+    );
+
+
+    console.info(
+      "[Vertex AI] Response Engine:",
+      getResponseEngine()
+        ? "CONNECTED"
+        : "NOT CONNECTED"
+    );
+
 
     return getState();
+
   }
 
-  /**
-   * --------------------------------------------------------------------
-   * Public API
-   * --------------------------------------------------------------------
-   */
 
-  window.VertexAI = Object.freeze({
-    init,
-    open,
-    close,
-    toggle,
-    processQuestion,
-    clearConversation,
-    cancelPendingResponse,
-    replayLastResponse,
-    getState
-  });
+  /* ================================================================
+     PUBLIC API
+     ================================================================ */
 
-  /*
-   * Initialize when the script is loaded.
-   */
+  window.VertexAI =
+    Object.freeze({
+
+      init,
+
+      open,
+
+      close,
+
+      toggle,
+
+      processQuestion,
+
+      clearConversation,
+
+      cancelPendingResponse,
+
+      replayLastResponse,
+
+      getState
+
+    });
+
+
+  /* ================================================================
+     START
+     ================================================================ */
+
   init();
+
+
 })();
+```

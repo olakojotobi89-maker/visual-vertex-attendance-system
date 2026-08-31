@@ -1521,11 +1521,16 @@
     });
 
 
-  /* ================================================================
+    /* ================================================================
      START
      ================================================================ */
 
-  init();
-
+  /*
+   * Do NOT initialize automatically here.
+   *
+   * dashboard.html loads all Vertex AI modules first and then
+   * initializes the assistant. This prevents the response engine
+   * from being detected before it has loaded.
+   */
 
 })();

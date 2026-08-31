@@ -5,10 +5,21 @@
 
   This is NOT a standalone page. It contains no <!DOCTYPE>, <html>,
   <head>, or <body> — it is designed to be fetched as a string and
-  injected into the DOM of every VSAS page by vertex-ai-ui.js.
+  injected into the DOM of every VSAS page by dashboard.html (or any
+  other host page) via container.innerHTML = html.
+
+  IMPORTANT — PATH RULE FOR THIS FILE:
+  Because this markup is injected via innerHTML into a page that lives
+  one directory up (e.g. VSAS/dashboard.html), every relative URL here
+  resolves against the HOST page's location, NOT this file's own
+  folder. So asset paths below are written relative to the VSAS root
+  (i.e. prefixed with "vertex-ai/"), not relative to this file.
 
   Contains no inline JavaScript.
-  Visual design belongs in vertex-ai.css / Vertex.css.
+  Contains no <link rel="stylesheet"> — the host page (dashboard.html)
+  is responsible for loading Vertex.css from ./vertex-ai/css/Vertex.css
+  so it is loaded exactly once, with the correct path, regardless of
+  which page injects this fragment.
   Behavior belongs in the vertex-ai-*.js modules.
 
   ----------------------------------------------------------------------
@@ -32,8 +43,6 @@
 
   ----------------------------------------------------------------------
 -->
-
-<link rel="stylesheet" href="Vertex.css" />
 
 <div
   id="vertex-ai-root"
@@ -122,7 +131,7 @@
         >
 
           <img
-            src="logo.png"
+            src="vertex-ai/logo.png"
             class="vertex-ai-logo"
             data-vertex-ai-logo
             alt="Visual Vertex Technology Company"
@@ -218,7 +227,7 @@
           >
 
             <img
-              src="logo.png"
+              src="vertex-ai/logo.png"
               class="vertex-ai-welcome-logo"
               alt=""
               draggable="false"
@@ -502,4 +511,3 @@
   </section>
 
 </div>
-

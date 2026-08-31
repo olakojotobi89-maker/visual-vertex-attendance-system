@@ -191,7 +191,7 @@
 
       shortAnswer:
         "Visual Vertex offers graphic design, web development, " +
-        "cybersecurity, data analytics, cloud solutions, and IT " +
+        "cybersecurity, data analytics, cloud solutions, software development, tactical millitry hardware and IT " +
         "consultation.",
 
       answer:

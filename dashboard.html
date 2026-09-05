@@ -21,8 +21,6 @@
   <link rel="icon" type="image/png" sizes="16x16" href="images/icons/favicon-16.png" />
   <link rel="apple-touch-icon" href="images/icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="css/pwa.css" />
-  <!-- Vertex AI Assistant styles (loaded alongside, does not replace VSAS CSS) -->
-  <link rel="stylesheet" href="./vertex-ai/css/Vertex.css" />
   <script src="js/pwa.js"></script>
 </head>
 <body class="dashboard-body">
@@ -337,6 +335,9 @@
   (function () {
     "use strict";
 
+    /* Legacy eager loader retained for reference; lazy embed owns integration. */
+    return;
+
     // Dependency order: config -> security -> cache -> knowledge ->
     // search -> voice -> ui -> response engine -> main orchestrator (last).
     var VERTEX_SCRIPTS = [
@@ -348,9 +349,14 @@
       "./vertex-ai/knowledge/internship-knowledge.js",
       "./vertex-ai/knowledge/knowledge-index.js",
       "./vertex-ai/js/vertex-ai-search.js",
-      "./vertex-ai/js/vertex-ai-ui.js",
       "./vertex-ai/js/vertex-ai-response-engine.js",
-      "./vertex-ai/js/vertex-ai.js"
+      "./vertex-ai/core/conversation-manager.js",
+      "./vertex-ai/core/local-tools.js",
+      "./vertex-ai/core/web-researcher.js",
+      "./vertex-ai/providers/local-provider.js",
+      "./vertex-ai/core/orchestrator.js",
+      "./vertex-ai/js/vertex-ai-chat-ui.js",
+      "./vertex-ai/js/vertex-ai-controller.js"
     ];
 
     function loadScript(src) {
@@ -447,5 +453,6 @@
   <script src="js/main.js"></script>
   <script src="js/notifications.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="vertex-ai/js/vertex-ai-embed.js"></script>
 </body>
 </html>

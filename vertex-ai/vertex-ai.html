@@ -131,7 +131,7 @@
         >
 
           <img
-            src="vertex-ai/logo.png"
+            src="images/logo.png"
             class="vertex-ai-logo"
             data-vertex-ai-logo
             alt="Visual Vertex Technology Company"
@@ -172,6 +172,28 @@
       <div class="vertex-ai-header-controls">
 
         <button
+          id="vertex-ai-new"
+          class="vertex-ai-icon-button"
+          type="button"
+          data-vertex-ai-action="new-conversation"
+          aria-label="Start a new conversation"
+          title="New conversation"
+        >
+          <span aria-hidden="true">+</span>
+        </button>
+
+        <button
+          id="vertex-ai-clear"
+          class="vertex-ai-icon-button"
+          type="button"
+          data-vertex-ai-action="clear-conversation"
+          aria-label="Clear conversation"
+          title="Clear conversation"
+        >
+          <span aria-hidden="true">&#8635;</span>
+        </button>
+
+        <button
           id="vertex-ai-minimize"
           class="vertex-ai-icon-button"
           type="button"
@@ -197,6 +219,14 @@
       </div>
 
     </header>
+
+    <aside class="vertex-ai-history" data-vertex-ai-history aria-label="Conversation history">
+      <div class="vertex-ai-history-heading">
+        <span>Conversations</span>
+        <button type="button" class="vertex-ai-history-new" data-vertex-ai-action="new-conversation" aria-label="New conversation" title="New conversation">+</button>
+      </div>
+      <div class="vertex-ai-history-list" data-vertex-ai-history-list></div>
+    </aside>
 
 
     <!-- ================================================================
@@ -227,7 +257,7 @@
           >
 
             <img
-              src="vertex-ai/logo.png"
+              src="images/logo.png"
               class="vertex-ai-welcome-logo"
               alt=""
               draggable="false"
@@ -357,6 +387,12 @@
 
       </div>
 
+      <div class="vertex-ai-generation-status" data-vertex-ai-generation-status hidden>
+        <span class="vertex-ai-status-pulse" aria-hidden="true"></span>
+        <span data-vertex-ai-generation-label>Thinking...</span>
+        <button type="button" class="vertex-ai-stop-button" data-vertex-ai-action="stop-generation">Stop</button>
+      </div>
+
     </div>
 
 
@@ -394,6 +430,18 @@
           Voice responses off
         </span>
 
+      </button>
+
+      <button
+        id="vertex-ai-regenerate"
+        type="button"
+        class="vertex-ai-voice-button vertex-ai-regenerate-button"
+        data-vertex-ai-action="regenerate"
+        aria-label="Regenerate the last response"
+        title="Regenerate response"
+        disabled
+      >
+        <span aria-hidden="true">&#8635;</span>
       </button>
 
 

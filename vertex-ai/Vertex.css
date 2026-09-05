@@ -1587,3 +1587,92 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ==========================================================================
+  24. CHAT WORKSPACE EXTENSIONS
+  ========================================================================== */
+
+#vertex-ai-root .vertex-ai-panel {
+  width: min(820px, calc(100vw - 48px));
+}
+
+#vertex-ai-root .vertex-ai-history {
+  position: absolute;
+  top: 78px;
+  bottom: 0;
+  left: 0;
+  width: 210px;
+  padding: 14px 10px;
+  overflow-y: auto;
+  background: #f7f7f8;
+  border-right: 1px solid var(--vv-border);
+  z-index: 2;
+}
+
+#vertex-ai-root .vertex-ai-history-heading,
+#vertex-ai-root .vertex-ai-history-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#vertex-ai-root .vertex-ai-history-heading {
+  justify-content: space-between;
+  padding: 2px 6px 10px;
+  color: var(--vv-gray-600);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+#vertex-ai-root .vertex-ai-history-new,
+#vertex-ai-root .vertex-ai-history-action {
+  border: 0;
+  background: transparent;
+  color: var(--vv-gray-500);
+  cursor: pointer;
+}
+
+#vertex-ai-root .vertex-ai-history-new { font-size: 20px; line-height: 1; }
+#vertex-ai-root .vertex-ai-history-action { padding: 4px; font-size: 10px; }
+#vertex-ai-root .vertex-ai-history-item { margin-bottom: 4px; padding: 3px; border-radius: 8px; }
+#vertex-ai-root .vertex-ai-history-item.is-active { background: var(--vv-red-soft); }
+#vertex-ai-root .vertex-ai-history-select { flex: 1; min-width: 0; padding: 8px 6px; overflow: hidden; border: 0; background: transparent; color: var(--vv-gray-700); font-size: 12px; text-align: left; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+
+#vertex-ai-root .vertex-ai-body,
+#vertex-ai-root .vertex-ai-voice-controls,
+#vertex-ai-root .vertex-ai-input-form,
+#vertex-ai-root .vertex-ai-disclaimer { margin-left: 210px; }
+
+#vertex-ai-root .vertex-ai-generation-status { display: flex; align-items: center; gap: 8px; margin: 0 16px 6px 226px; color: var(--vv-gray-500); font-size: 12px; }
+#vertex-ai-root .vertex-ai-status-pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--vv-red); animation: vertex-ai-typing 1.1s infinite; }
+#vertex-ai-root .vertex-ai-stop-button { margin-left: auto; padding: 5px 10px; border: 1px solid var(--vv-gray-300); border-radius: 7px; background: var(--vv-white); color: var(--vv-gray-700); cursor: pointer; font-size: 11px; }
+
+#vertex-ai-root .vertex-ai-message { position: relative; display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 10px; max-width: 94%; padding: 14px 16px; border: 0; border-radius: 12px; }
+#vertex-ai-root .vertex-ai-message--user { margin-left: auto; background: #f0f0f1; }
+#vertex-ai-root .vertex-ai-message--assistant { margin-right: auto; background: var(--vv-white); }
+#vertex-ai-root .vertex-ai-message-avatar { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px; background: var(--vv-black); color: var(--vv-white); font-size: 10px; font-weight: 700; }
+#vertex-ai-root .vertex-ai-message--user .vertex-ai-message-avatar { background: var(--vv-red); }
+#vertex-ai-root .vertex-ai-message-content { min-width: 0; overflow-wrap: anywhere; color: var(--vv-gray-700); }
+#vertex-ai-root .vertex-ai-message-content p { margin: 0 0 8px; }
+#vertex-ai-root .vertex-ai-message-content p:last-child { margin-bottom: 0; }
+#vertex-ai-root .vertex-ai-message-content pre { max-width: 100%; overflow: auto; padding: 12px; border-radius: 8px; background: #1b1b1d; color: #f7f7f8; font: 12px/1.5 Consolas, monospace; white-space: pre-wrap; }
+#vertex-ai-root .vertex-ai-message-content code { padding: 2px 4px; border-radius: 4px; background: var(--vv-gray-100); font-family: Consolas, monospace; font-size: .92em; }
+#vertex-ai-root .vertex-ai-message-content pre code { padding: 0; background: transparent; }
+#vertex-ai-root .vertex-ai-message-content a { color: var(--vv-red-dark); text-decoration: underline; }
+#vertex-ai-root .vertex-ai-message-actions { grid-column: 2; display: flex; gap: 6px; margin-top: 8px; }
+#vertex-ai-root .vertex-ai-message-actions button { padding: 3px 7px; border: 1px solid var(--vv-gray-200); border-radius: 6px; background: transparent; color: var(--vv-gray-500); cursor: pointer; font-size: 10px; }
+#vertex-ai-root .vertex-ai-sources { grid-column: 2; display: flex; flex-wrap: wrap; gap: 5px 10px; margin-top: 9px; color: var(--vv-gray-500); font-size: 10px; }
+#vertex-ai-root .vertex-ai-sources strong { flex-basis: 100%; color: var(--vv-gray-600); }
+
+@media (max-width: 640px) {
+  #vertex-ai-root .vertex-ai-panel { width: 100%; }
+  #vertex-ai-root .vertex-ai-history { display: none; }
+  #vertex-ai-root .vertex-ai-body,
+  #vertex-ai-root .vertex-ai-voice-controls,
+  #vertex-ai-root .vertex-ai-input-form,
+  #vertex-ai-root .vertex-ai-disclaimer { margin-left: 0; }
+  #vertex-ai-root .vertex-ai-generation-status { margin-left: 14px; }
+  #vertex-ai-root .vertex-ai-message { max-width: 96%; }
+}

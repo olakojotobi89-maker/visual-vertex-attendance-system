@@ -39,6 +39,6 @@
       return result;
     } finally { clearTimeout(timer); }
   }
-  function needsResearch(question) { return /\b(current|latest|recent|today|this week|news|who is the president|research|threats|trend|what happened|weather|price)\b/i.test(question); }
+  function needsResearch(question) { return /\b(current|latest|recent|today|this week|news|who is the president|research|threats|trend|what happened|what's happening|weather|price)\b/i.test(question); }
   window.VertexAIWebResearcher = Object.freeze({ search, needsResearch });
 })();

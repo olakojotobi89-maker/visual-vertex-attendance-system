@@ -10,7 +10,7 @@
       if (result && result.success && result.text) return Promise.resolve(result);
     }
     if (retrieval && retrieval.answer) return Promise.resolve({ success: true, text: retrieval.answer, source: "approved-knowledge", intent: "knowledge", confidence: 0.7 });
-    return Promise.resolve({ success: true, text: "I could not find enough approved information to answer that reliably. Try asking about VSAS, attendance, staff management, company services, or internship guidance.", source: "fallback", intent: "unknown", confidence: 0 });
+    return Promise.resolve({ success: true, text: "I don't have enough verified context to answer that confidently yet. Give me a little more detail and I'll work through it with you.", source: "fallback", intent: "unknown", confidence: 0 });
   }
   window.VertexAILocalProvider = Object.freeze({ id: "local", respond });
 })();

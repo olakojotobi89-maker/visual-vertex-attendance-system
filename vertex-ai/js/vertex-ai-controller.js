@@ -10,9 +10,9 @@
     if (activeRequest) return;
     const security = window.VertexAISecurity; const validation = security && security.validateQuestion ? security.validateQuestion(question) : { valid: Boolean(question), value: question };
     if (!validation.valid) { addSystem("I could not use that message because it is empty or contains unsafe markup."); return; }
-    const clean = validation.value; lastQuestion = clean; manager().addMessage("user", clean); renderActive(); ui().setBusy(true, "Thinking..."); ui().showTyping(); ui().setStatus("Working on your request..."); activeRequest = new AbortController();
+    const clean = validation.value; const context = manager().getContext(12); lastQuestion = clean; manager().addMessage("user", clean); renderActive(); ui().setBusy(true, "Thinking..."); ui().showTyping(); ui().setStatus("Working on your request..."); activeRequest = new AbortController();
     try {
-      const result = await window.VertexAIOrchestrator.run({ question: clean, context: manager().getContext(12), signal: activeRequest.signal, onProgress: function (label) { ui().setStatus(label); ui().setBusy(true, label); } });
+      const result = await window.VertexAIOrchestrator.run({ question: clean, context: context, signal: activeRequest.signal, onProgress: function (label) { ui().setStatus(label); ui().setBusy(true, label); } });
       if (activeRequest.signal.aborted) return;
       const content = result.text || "I could not produce a response."; const meta = { sources: result.sources || [], intent: result.intent, source: result.source };
       manager().addMessage("assistant", content, meta); renderActive(); ui().setStatus(result.source === "web-research" ? "Research complete" : "Ready to help"); ui().setBusy(false); ui().hideTyping(); document.querySelector("#vertex-ai-regenerate").disabled = false;

@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "test:security": "node tests/security-smoke.mjs"
+  },
   "devDependencies": {
     "supabase": "^2.116.0"
   }

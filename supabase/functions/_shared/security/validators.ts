@@ -170,3 +170,20 @@ export function requireUuidArray(
   }
   return { ok: true, value: out };
 }
+
+export function requireInteger(
+  value: unknown,
+  field: string,
+  opts: { min?: number; max?: number } = {},
+): FieldResult<number> {
+  if (typeof value !== "number" || !Number.isSafeInteger(value)) {
+    return { ok: false, error: { field, message: `${field} must be a safe integer.` } };
+  }
+  if (opts.min !== undefined && value < opts.min) {
+    return { ok: false, error: { field, message: `${field} is below the minimum allowed value.` } };
+  }
+  if (opts.max !== undefined && value > opts.max) {
+    return { ok: false, error: { field, message: `${field} is above the maximum allowed value.` } };
+  }
+  return { ok: true, value };
+}

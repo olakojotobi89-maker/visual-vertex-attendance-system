@@ -144,8 +144,9 @@
     const initials = getInitials(fullName);
 
     if (els.profilePhoto) {
-      if (currentProfile.avatar_url) {
-        els.profilePhoto.innerHTML = `<img src="${escapeHtml(currentProfile.avatar_url)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      const safeAvatarUrl = window.VSASSecurity?.safeHttpUrl(currentProfile.avatar_url, { sameOriginOnly: false });
+      if (safeAvatarUrl) {
+        els.profilePhoto.innerHTML = `<img src="${escapeHtml(safeAvatarUrl)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
       } else {
         els.profilePhoto.textContent = initials;
       }
@@ -354,24 +355,38 @@
   // later than this is "Late". Adjust to match your actual office hours.
   const ON_TIME_CUTOFF_HOUR = 9;
 
+  function getActivityPeriodRange(periodKey) {
+    return getPdfPeriodRange(periodKey || "this-month");
+  }
+
   async function loadRecentActivity() {
     const tbody = els.activityTableBody;
-    if (!tbody) return;
+    if (!tbody || !currentUser) return;
+
+    const periodKey = els.pdfPeriodSelect ? els.pdfPeriodSelect.value : "this-month";
+    const { start, end } = getActivityPeriodRange(periodKey);
 
     try {
-      const { data, error } = await window.supabaseClient
+      let query = window.supabaseClient
         .from("attendance")
         .select("attendance_date, check_in, check_out")
         .eq("user_id", currentUser.id)
-        .order("attendance_date", { ascending: false })
-        .limit(7);
+        .gte("attendance_date", start)
+        .lte("attendance_date", end)
+        .order("attendance_date", { ascending: false });
+
+      if (periodKey !== "all-time") {
+        query = query.limit(7);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
       const rows = data || [];
 
       if (rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#6b7280;">No attendance history yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#6b7280;">No attendance history for this period.</td></tr>`;
         return;
       }
 
@@ -700,6 +715,10 @@
     updateHoursWorked();
 
     els.actionBtn.addEventListener("click", handleAttendanceAction);
+
+    if (els.pdfPeriodSelect) {
+      els.pdfPeriodSelect.addEventListener("change", loadRecentActivity);
+    }
 
     // The PDF feature is wired up defensively: a problem here must never
     // stop the core attendance flow (stats + Recent Activity) below from

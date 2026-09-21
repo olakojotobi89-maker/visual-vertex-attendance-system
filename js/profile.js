@@ -57,8 +57,9 @@
     const initials = getInitials(fullName);
 
     if (els.profilePhoto) {
-      if (currentProfile.avatar_url) {
-        els.profilePhoto.innerHTML = `<img src="${escapeHtml(currentProfile.avatar_url)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      const safeAvatarUrl = window.VSASSecurity?.safeHttpUrl(currentProfile.avatar_url, { sameOriginOnly: false });
+      if (safeAvatarUrl) {
+        els.profilePhoto.innerHTML = `<img src="${escapeHtml(safeAvatarUrl)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
       } else {
         els.profilePhoto.textContent = initials;
       }

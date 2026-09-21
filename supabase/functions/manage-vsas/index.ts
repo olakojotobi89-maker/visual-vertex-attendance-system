@@ -10,8 +10,11 @@ import {
   requireEnum,
   requireBoolean,
   requireUuidArray,
+  requestOriginAllowed,
+  rateLimit,
+  clientKey,
   type FieldError,
-} from '../_shared/security/mod.ts';
+} from '../_shared/security/Mod.ts';
 
 const url = Deno.env.get('SUPABASE_URL') ?? '';
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
@@ -30,7 +33,7 @@ async function caller(req: Request) {
   if (!data.user) return null;
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: profile } = await admin.from('profiles').select('id, role').eq('id', data.user.id).maybeSingle();
-  return profile && managers.has(String(profile.role).toLowerCase()) ? { user: data.user, admin } : null;
+  return profile && managers.has(String(profile.role).toLowerCase()) ? { user: data.user, role: String(profile.role).toLowerCase(), admin } : null;
 }
 
 async function log(admin: ReturnType<typeof createClient>, actor: string, action: string, entity: string, id?: string, metadata: Record<string, unknown> = {}) {
@@ -42,12 +45,15 @@ function fieldErrorResponse(error: FieldError): Response {
   return errorResponse(400, error.message);
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
+  if (!requestOriginAllowed(req)) return errorResponse(403, 'Origin is not allowed.');
   if (req.method === 'OPTIONS') return handleOptions();
   if (req.method !== 'POST') return errorResponse(405, 'Method not allowed.');
 
   const auth = await caller(req);
   if (!auth) return errorResponse(403, 'You are not authorized to perform this operation.');
+  const limit = rateLimit(clientKey(req, auth.user.id), 30);
+  if (!limit.allowed) return new Response(JSON.stringify({ error: 'Too many requests. Please try again shortly.' }), { status: 429, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Retry-After': String(limit.retryAfter) } });
 
   // Strict JSON body reading: enforces a max size, rejects malformed/empty
   // bodies, requires a top-level object, and rejects dangerous keys.
@@ -116,11 +122,13 @@ Deno.serve(async (req) => {
       }
     }
     if (body.role !== undefined) {
+      if (auth.role !== 'admin') return errorResponse(403, 'Only administrators can change roles.');
       const r = requireEnum(body.role, 'role', VALID_ROLES);
       if (!r.ok) return fieldErrorResponse(r.error);
       patch.role = r.value;
     }
     if (body.is_active !== undefined) {
+      if (auth.role !== 'admin') return errorResponse(403, 'Only administrators can change account status.');
       const r = requireBoolean(body.is_active, 'is_active');
       if (!r.ok) return fieldErrorResponse(r.error);
       patch.is_active = r.value;
@@ -129,12 +137,13 @@ Deno.serve(async (req) => {
     if (!Object.keys(patch).length) return errorResponse(400, 'No allowed fields supplied.');
 
     const { data, error } = await admin.from('profiles').update(patch).eq('id', idResult.value).select('id').single();
-    if (error) return errorResponse(400, error.message);
+    if (error) { console.error('[manage-vsas] profile update failed:', error); return errorResponse(400, 'Could not update the staff profile.'); }
     await log(admin, user.id, 'staff.updated', 'profile', data.id, { fields: Object.keys(patch) });
     return jsonResponse(200, { profile: data });
   }
 
   if (action === 'delete_staff') {
+    if (auth.role !== 'admin') return errorResponse(403, 'Only administrators can delete staff accounts.');
     const ALLOWED_FIELDS = ['action', 'id'] as const;
     const allowlist = checkAllowlist(body, ALLOWED_FIELDS);
     if (!allowlist.ok) {
@@ -150,7 +159,7 @@ Deno.serve(async (req) => {
     if (!target) return errorResponse(404, 'Staff member not found.');
     if (String(target.role).toLowerCase() === 'admin' && String(auth.user.id) !== id) return errorResponse(403, 'Admin accounts require a separate owner-approved workflow.');
     const { error } = await admin.auth.admin.deleteUser(id);
-    if (error) return errorResponse(400, error.message);
+    if (error) { console.error('[manage-vsas] staff deletion failed:', error); return errorResponse(400, 'Could not delete the staff account.'); }
     await log(admin, user.id, 'staff.deleted', 'profile', id, { prior_role: target.role });
     return jsonResponse(200, { deleted: id });
   }
@@ -176,7 +185,7 @@ Deno.serve(async (req) => {
       ? admin.from('departments').update(values).eq('id', idResult.value)
       : admin.from('departments').insert(values);
     const { data, error } = await query.select('id, name, description').single();
-    if (error) return errorResponse(400, error.message);
+    if (error) { console.error('[manage-vsas] department save failed:', error); return errorResponse(400, 'Could not save the department.'); }
     await log(admin, user.id, idResult.value ? 'department.updated' : 'department.created', 'department', data.id);
     return jsonResponse(200, { department: data });
   }
@@ -229,14 +238,14 @@ Deno.serve(async (req) => {
       published_at: new Date().toISOString(),
       created_by: user.id,
     }).select('id').single();
-    if (error) return errorResponse(400, error.message);
+    if (error) { console.error('[manage-vsas] notification publish failed:', error); return errorResponse(400, 'Could not publish the notification.'); }
 
     let recipients: string[] = userIds;
     if (targetType === 'all' || targetType === 'department') {
       let query = admin.from('profiles').select('id').eq('is_active', true);
       if (targetType === 'department') query = query.eq('department_id', departmentId ?? '');
       const { data } = await query;
-      recipients = (data ?? []).map((p) => p.id);
+      recipients = (data ?? []).map((p: { id: string }) => p.id);
     }
     if (recipients.length) await admin.from('notification_recipients').insert(recipients.map((id) => ({ notification_id: notification.id, user_id: id })));
     await log(admin, user.id, 'notification.published', 'notification', notification.id, { target_type: targetType, recipients: recipients.length });
@@ -281,7 +290,7 @@ Deno.serve(async (req) => {
       ? admin.from('announcements').update(values).eq('id', idResult.value)
       : admin.from('announcements').insert(values);
     const { data, error } = await query.select('id').single();
-    if (error) return errorResponse(400, error.message);
+    if (error) { console.error('[manage-vsas] announcement save failed:', error); return errorResponse(400, 'Could not save the announcement.'); }
     await log(admin, user.id, idResult.value ? 'announcement.updated' : 'announcement.created', 'announcement', data.id);
     return jsonResponse(200, { announcement_id: data.id });
   }

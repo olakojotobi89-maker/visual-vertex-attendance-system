@@ -25,6 +25,10 @@
       for (let attempt = 0; attempt < 20 && !window.VSASAuth; attempt++) await new Promise(function (resolve) { setTimeout(resolve, 50); });
       if (window.VSASAuth && typeof window.VSASAuth.requireAuth === "function") { try { authContext = await window.VSASAuth.requireAuth(); } catch (error) { authContext = null; } }
       if (!authContext || !authContext.user) throw new Error("Vertex AI requires an authenticated VSAS user.");
+      const access = window.VertexAISecurity && typeof window.VertexAISecurity.checkAccess === "function"
+        ? window.VertexAISecurity.checkAccess({ authenticated: true, role: authContext.profile && authContext.profile.role })
+        : { allowed: true };
+      if (!access.allowed) throw new Error("Vertex AI is not available for this account.");
       const scope = authContext.user.id; manager().init(scope);
       ui().init({ submit: ask, "new-conversation": function () { manager().create(); renderActive(); ui().open(); }, "clear-conversation": function () { manager().clear(); renderActive(); }, "select-conversation": function (element) { manager().select(element.dataset.conversationId); renderActive(); }, "rename-conversation": function (element) { const item = manager().active(); const title = window.prompt("Conversation name", item && item.title); if (title) { manager().rename(element.dataset.conversationId, title); setHistory(); } }, "delete-conversation": function (element) { manager().remove(element.dataset.conversationId); renderActive(); }, "stop-generation": function () { if (activeRequest) activeRequest.abort(); ui().setBusy(false); ui().hideTyping(); ui().setStatus("Generation stopped"); }, regenerate: function () { if (lastQuestion) ask(lastQuestion); }, "copy-message": function (element) { navigator.clipboard && navigator.clipboard.writeText(element.dataset.copyText || ""); }, "copy-code": function (element) { navigator.clipboard && navigator.clipboard.writeText(element.dataset.copyText || ""); } });
       renderActive(); initialized = true; return window.VertexAI;

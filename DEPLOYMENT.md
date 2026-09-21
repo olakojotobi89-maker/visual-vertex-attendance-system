@@ -177,7 +177,7 @@ the position/department filters include the new values without a page reload.
 
 ## 8. Automatic welcome emails (Resend)
 
-The `create-staff` Edge Function now sends a branded welcome email automatically after a staff account and profile are created. The email contains the staff member's email, temporary password, Staff ID, department, position, role, VSAS login link, and the company logo.
+The `create-staff` Edge Function now sends a branded welcome email automatically after a staff account and profile are created. The email contains the staff member's email, Staff ID, department, position, role, VSAS login link, and the company logo. It does not contain the temporary password; deliver credentials through an approved secure channel.
 
 The Resend API key must remain server-side. In Supabase Dashboard → Edge Functions → `create-staff` → Secrets, add:
 
@@ -194,7 +194,7 @@ APP_URL=https://visual-vertex-attendance-system.onrender.com
 
 Until a custom sending domain is verified in Resend, the function defaults to `onboarding@resend.dev`. Once your company domain is verified, replace `RESEND_FROM_EMAIL` with your company address (for example `HR <hr@yourdomain.com.ng>`).
 
-The email is sent through Resend's HTTPS API from the Edge Function; the API key is never placed in `js/staff-management.js` or any other browser code.
+The email is sent through Resend's HTTPS API from the Edge Function; the API key is never placed in `js/staff-management.js` or any other browser code. Temporary passwords must not be sent through ordinary email.
 
 If Resend temporarily rejects a recipient because of your account/domain verification status, VSAS still keeps the newly created staff account. The function returns `welcome_email.sent = false` and the admin UI shows a warning instead of falsely claiming that the email was sent.
 

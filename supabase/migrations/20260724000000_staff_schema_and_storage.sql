@@ -189,7 +189,7 @@ CREATE POLICY "Admins can update all profiles"
 CREATE POLICY "Service role can insert profiles"
   ON public.profiles
   FOR INSERT
-  WITH CHECK (true);  -- Service role bypasses RLS; this is needed for non-service-role helpers
+  WITH CHECK (false);  -- Service role bypasses RLS; browser inserts are denied
 
 -- NOTE: DELETE operations are intentionally not given RLS policies.
 -- Deletion should be handled server-side only via Edge Functions or

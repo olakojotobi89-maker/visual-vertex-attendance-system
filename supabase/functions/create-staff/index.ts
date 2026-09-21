@@ -16,7 +16,7 @@
 //   position       string   required
 //   role           string   required   ("admin" | "hr" | "manager" | "staff")
 //   staffId        string   required
-//   tempPassword   string   required   (min 8 chars)
+//   tempPassword   string   required   (min 8 chars; never included in email)
 //   profilePicture File     optional   (image/jpeg | image/png, max 2MB)
 //
 // No other form fields are accepted — see ALLOWED_FORM_FIELDS below.
@@ -45,7 +45,10 @@ import {
   optionalPhone,
   requireEmail,
   requireEnum,
-} from "../_shared/security/mod.ts";
+  requestOriginAllowed,
+  rateLimit,
+  clientKey,
+} from "../_shared/security/Mod.ts";
 
 // --------------------------------------------------------------------------
 // Environment
@@ -267,6 +270,10 @@ async function parseForm(
     if (profilePicture.size > MAX_AVATAR_BYTES) {
       return { error: "Profile picture must be 2MB or smaller.", status: 400 };
     }
+    const signature = new Uint8Array(await profilePicture.slice(0, 12).arrayBuffer());
+    const isJpeg = signature[0] === 0xff && signature[1] === 0xd8 && signature[2] === 0xff;
+    const isPng = signature[0] === 0x89 && signature[1] === 0x50 && signature[2] === 0x4e && signature[3] === 0x47 && signature[4] === 0x0d && signature[5] === 0x0a && signature[6] === 0x1a && signature[7] === 0x0a;
+    if (!isJpeg && !isPng) return { error: "Profile picture content is not a valid JPG or PNG image.", status: 400 };
   }
 
   return { values, profilePicture };
@@ -324,7 +331,6 @@ async function sendWelcomeEmail(values: StaffPayload, userId: string): Promise<{
   const lastName = escapeHtml(values.lastName.trim());
   const fullName = `${firstName} ${lastName}`.trim();
   const email = escapeHtml(values.email.trim());
-  const password = escapeHtml(values.tempPassword);
   const staffId = escapeHtml(values.staffId.trim());
   const role = escapeHtml(values.role.trim());
   const department = escapeHtml(values.department.trim());
@@ -358,7 +364,6 @@ async function sendWelcomeEmail(values: StaffPayload, userId: string): Promise<{
           <div style="font-size:14px;font-weight:700;margin-bottom:14px;">Your login details</div>
           <table style="width:100%;border-collapse:collapse;font-size:14px;">
             <tr><td style="padding:7px 0;color:#71717a;width:38%;">Email</td><td style="padding:7px 0;font-weight:600;">${email}</td></tr>
-            <tr><td style="padding:7px 0;color:#71717a;">Temporary password</td><td style="padding:7px 0;font-weight:700;word-break:break-word;">${password}</td></tr>
             <tr><td style="padding:7px 0;color:#71717a;">Staff ID</td><td style="padding:7px 0;font-weight:600;">${staffId}</td></tr>
             <tr><td style="padding:7px 0;color:#71717a;">Department</td><td style="padding:7px 0;">${department}</td></tr>
             <tr><td style="padding:7px 0;color:#71717a;">Position</td><td style="padding:7px 0;">${position}</td></tr>
@@ -371,7 +376,7 @@ async function sendWelcomeEmail(values: StaffPayload, userId: string): Promise<{
         </div>
 
         <p style="font-size:13px;line-height:1.7;color:#52525b;margin:18px 0 0;">
-          <strong>Important:</strong> This is a temporary password. Please log in and change your password immediately after your first successful login. Keep your login details private and do not share them with anyone.
+          <strong>Important:</strong> Login credentials must be delivered through the approved secure channel. Never share passwords by ordinary email.
         </p>
 
         <p style="font-size:13px;line-height:1.7;color:#71717a;margin:20px 0 0;">
@@ -423,7 +428,7 @@ async function sendWelcomeEmail(values: StaffPayload, userId: string): Promise<{
     console.error("[create-staff] Welcome email request failed:", err);
     return {
       sent: false,
-      error: err instanceof Error ? err.message : "Unable to contact Resend.",
+      error: "Unable to contact the email service.",
     };
   }
 }
@@ -433,6 +438,7 @@ async function sendWelcomeEmail(values: StaffPayload, userId: string): Promise<{
 // --------------------------------------------------------------------------
 
 Deno.serve(async (req: Request) => {
+  if (!requestOriginAllowed(req)) return errorResponse(403, "Origin is not allowed.");
   if (req.method === "OPTIONS") {
     return handleOptions();
   }
@@ -453,6 +459,10 @@ Deno.serve(async (req: Request) => {
   const authResult = await requireAdmin(req, adminClient);
   if (!authResult.ok) {
     return errorResponse(authResult.status, authResult.message);
+  }
+  const limit = rateLimit(clientKey(req, authResult.userId), 10);
+  if (!limit.allowed) {
+    return new Response(JSON.stringify({ error: "Too many staff-creation requests. Please try again shortly." }), { status: 429, headers: { ...CORS_HEADERS, "Content-Type": "application/json", "Retry-After": String(limit.retryAfter) } });
   }
 
   // 2. Parse + validate the form payload (content-type, size, allowed
@@ -481,7 +491,7 @@ Deno.serve(async (req: Request) => {
   }
 
   // 4. Create the Auth user.
-  let newUserId: string | null = null;
+  let newUserId = "";
   try {
     const { data: createdUser, error: createUserError } = await adminClient.auth.admin.createUser({
       email: values.email.trim(),
@@ -518,10 +528,10 @@ Deno.serve(async (req: Request) => {
       avatarPath = uploaded.path;
     } catch (err) {
       console.error("[create-staff] Avatar upload failed:", err);
-      await adminClient.auth.admin.deleteUser(newUserId).catch((cleanupErr) =>
+      await adminClient.auth.admin.deleteUser(newUserId).catch((cleanupErr: unknown) =>
         console.error("[create-staff] Rollback (delete user) failed:", cleanupErr),
       );
-      return errorResponse(500, err instanceof Error ? err.message : "Failed to upload profile picture.");
+      return errorResponse(500, "Failed to upload profile picture. Please try again.");
     }
   }
 
@@ -551,14 +561,14 @@ Deno.serve(async (req: Request) => {
 
     // Roll back the Auth user and any uploaded avatar so we don't leave
     // an orphaned login with no matching profile.
-    await adminClient.auth.admin.deleteUser(newUserId).catch((cleanupErr) =>
+    await adminClient.auth.admin.deleteUser(newUserId).catch((cleanupErr: unknown) =>
       console.error("[create-staff] Rollback (delete user) failed:", cleanupErr),
     );
     if (avatarPath) {
       await adminClient.storage
         .from(AVATAR_BUCKET)
         .remove([avatarPath])
-        .catch((cleanupErr) => console.error("[create-staff] Rollback (delete avatar) failed:", cleanupErr));
+        .catch((cleanupErr: unknown) => console.error("[create-staff] Rollback (delete avatar) failed:", cleanupErr));
     }
 
     const status = insertError?.code === "23505" ? 409 : 500;

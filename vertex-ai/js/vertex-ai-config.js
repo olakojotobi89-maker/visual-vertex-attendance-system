@@ -221,7 +221,9 @@
         "administrator",
         "staff",
         "intern",
-        "manager"
+        "manager",
+        "ceo",
+        "administrator"
       ],
 
       /**

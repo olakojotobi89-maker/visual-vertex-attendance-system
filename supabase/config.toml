@@ -34,7 +34,7 @@ enabled = true
 file_size_limit = "10MiB"
 
 [functions.create-staff]
-verify_jwt = false
+verify_jwt = true
 
 [functions.manage-vsas]
-verify_jwt = false
+verify_jwt = true

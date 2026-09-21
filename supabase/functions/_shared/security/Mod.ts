@@ -14,3 +14,4 @@ export * from "./dangerous-keys.ts";
 export * from "./safe-json.ts";
 export * from "./validators.ts";
 export * from "./schema.ts";
+export * from "./request-guard.ts";

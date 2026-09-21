@@ -105,12 +105,12 @@ to authenticated;
    ========================================================= */
 
 /*
-  Existing departments.id is BIGINT.
-  Therefore profiles.department_id must also be BIGINT.
+  The original departments table uses UUID ids.
+  Therefore profiles.department_id must also be UUID.
 */
 
 alter table public.profiles
-  add column if not exists department_id bigint;
+  add column if not exists department_id uuid;
 
 
 /*
@@ -499,10 +499,10 @@ create table if not exists public.notifications (
     ),
 
   /*
-    Existing departments.id is BIGINT.
+    Existing departments.id is UUID.
   */
 
-  department_id bigint
+  department_id uuid
     references public.departments(id)
     on delete set null,
 

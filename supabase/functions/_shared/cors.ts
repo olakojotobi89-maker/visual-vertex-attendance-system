@@ -7,7 +7,7 @@
 //      "Access-Control-Allow-Origin": "https://vsas.visualvertextechnologycompany.com"
 // -----------------------------------------------------------------------
 
-const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") || "*";
+const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") || "https://visual-vertex-attendance-system.onrender.com";
 
 export const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": allowedOrigin,
@@ -15,6 +15,9 @@ export const CORS_HEADERS: Record<string, string> = {
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Vary": "Origin",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "same-origin",
+  "Cache-Control": "no-store",
 };
 
 /**

@@ -25,6 +25,37 @@ const ROLE_REDIRECTS = {
 
 const LOGIN_PAGE = "login.html";
 
+/* Browser-side safety helpers are UX protections; Auth/RLS remain authoritative. */
+window.VSASSecurity = Object.freeze({
+  safeHttpUrl(value, options = {}) {
+    try {
+      const url = new URL(String(value || ""), window.location.href);
+      const allowSameOriginOnly = options.sameOriginOnly !== false;
+      if (url.protocol !== "https:" && !(url.protocol === "http:" && location.hostname === "localhost")) return "";
+      const isSupabaseHost = url.hostname === "supabase.co" || url.hostname.endsWith(".supabase.co");
+      if (url.origin !== location.origin && !isSupabaseHost) return "";
+      if (allowSameOriginOnly && url.origin !== location.origin) return "";
+      return url.href;
+    } catch (_) { return ""; }
+  },
+  safeError(error, fallback = "Something went wrong. Please try again.") {
+    const message = String(error?.message || "");
+    return message && !/token|secret|key|authorization|stack|postgres|sql|supabase/i.test(message) ? message : fallback;
+  },
+  createRateLimiter(limit = 10, windowMs = 60000) {
+    let count = 0;
+    let resetAt = 0;
+    return Object.freeze({
+      allow() {
+        const now = Date.now();
+        if (now >= resetAt) { count = 0; resetAt = now + windowMs; }
+        count += 1;
+        return count <= limit;
+      }
+    });
+  }
+});
+
 /* ------------------------------------------------------------------ */
 /* UI helpers: alerts + field errors                                   */
 /* ------------------------------------------------------------------ */
@@ -137,8 +168,11 @@ async function login(identifier, password, rememberMe) {
 
 async function logout() {
   if (!window.supabaseClient) return;
+  const user = await getCurrentUser();
   await window.supabaseClient.auth.signOut();
   localStorage.removeItem("vsas_remember_me");
+  sessionStorage.clear();
+  if (user?.id) localStorage.removeItem("vsas_vertex_conversations_v1_" + user.id);
   window.location.href = LOGIN_PAGE;
 }
 

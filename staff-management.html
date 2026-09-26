@@ -15,6 +15,8 @@
   <link rel="stylesheet" href="css/responsive.css" />
   <!-- Dashboard-only additions: sidebar, stat cards, table, modal -->
   <link rel="stylesheet" href="css/staff management.css" />
+  <!-- NEW: Birthday Celebration feature (modal + animated overlay). Additive only. -->
+  <link rel="stylesheet" href="css/birthday-celebration.css" />
   <!-- PWA: install support (manifest, icons, install prompt) -->
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#E53935" />
@@ -264,6 +266,11 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9ZM10 21h4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Notify Staff
           </button>
+          <!-- NEW: Birthday Celebration entry point. Additive only; existing buttons/handlers untouched. -->
+          <button type="button" class="btn-add-staff" id="openBirthdayBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 3c.6 1 1.2 1.9 1.2 2.7 0 .9-.5 1.3-1.2 1.3s-1.2-.4-1.2-1.3C10.8 4.9 11.4 4 12 3ZM4 21v-6.5A2.5 2.5 0 0 1 6.5 12h11a2.5 2.5 0 0 1 2.5 2.5V21M4 21h16M4 17.5h16M8 12V9.8c0-.9.6-1.5 1.4-1.8a2 2 0 0 1 2.6 1.1 2 2 0 0 1 2.6-1.1c.8.3 1.4.9 1.4 1.8V12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Birthday Celebration
+          </button>
         </section>
 
         <!-- Staff table -->
@@ -471,6 +478,89 @@
     </div>
   </div>
 
+  <!-- ============================== BIRTHDAY CELEBRATION MODAL (NEW) ==============================
+       Follows the exact same .modal-overlay / .modal-card / .modal-form-grid pattern as the
+       modals above, so it inherits existing VSAS modal styling with no new modal CSS needed. -->
+  <div class="modal-overlay" id="birthdayModal" role="dialog" aria-modal="true" aria-labelledby="birthdayModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="birthdayModalTitle">Birthday Celebration</h2>
+        <button type="button" class="modal-close" id="closeBirthdayBtn" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <form id="birthdayForm" novalidate>
+        <div class="modal-body">
+
+          <div class="auth-alert auth-alert--error" id="birthdayAlert" role="alert" aria-live="assertive" style="display:none;">
+            <span id="birthdayAlertText">Please fix the errors below.</span>
+          </div>
+
+          <div class="modal-form-grid">
+
+            <div class="form-group span-2">
+              <label class="form-label" for="birthdayStaffSelect">Staff Member</label>
+              <div class="form-control-wrap">
+                <select id="birthdayStaffSelect" class="form-control" required>
+                  <option value="">Select staff member</option>
+                </select>
+              </div>
+              <p class="field-error" id="birthdayStaffError"><span>Select the staff member being celebrated.</span></p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="birthdayDisplayName">Display Name</label>
+              <div class="form-control-wrap">
+                <input type="text" id="birthdayDisplayName" class="form-control" placeholder="e.g. Ada Okafor" required />
+              </div>
+              <p class="field-error" id="birthdayNameError"><span>Enter the name to display.</span></p>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="birthdayDeptPosition">Department / Position</label>
+              <div class="form-control-wrap">
+                <input type="text" id="birthdayDeptPosition" class="form-control" placeholder="Auto-filled, optional" />
+              </div>
+            </div>
+
+            <div class="form-group span-2">
+              <label class="form-label" for="birthdayMessage">Celebration Message (optional)</label>
+              <div class="form-control-wrap">
+                <textarea id="birthdayMessage" class="form-control" rows="3" maxlength="300" placeholder="e.g. Join us in wishing Ada a fantastic year ahead!"></textarea>
+              </div>
+            </div>
+
+            <div class="form-group span-2">
+              <label class="form-label" for="birthdayFlyerInput">Birthday Flyer</label>
+              <label class="upload-field" for="birthdayFlyerInput" id="birthdayUploadLabel">
+                Click to upload the designed flyer (JPG or PNG, max 5MB)
+              </label>
+              <input type="file" id="birthdayFlyerInput" name="birthdayFlyer" accept="image/png, image/jpeg" style="display:none;" />
+              <p class="field-error" id="birthdayFlyerError"><span>Upload a JPG or PNG flyer under 5MB.</span></p>
+            </div>
+
+            <div class="form-group span-2 birthday-preview-group" id="birthdayPreviewWrap" style="display:none;">
+              <label class="form-label">Preview</label>
+              <div class="birthday-preview-box">
+                <img id="birthdayPreviewImg" alt="Birthday flyer preview" />
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelBirthdayBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="publishBirthdayBtn" data-loading="false">
+            <span class="btn-label">Publish Celebration</span>
+            <span class="btn-spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Load order: Supabase CDN -> supabase.js (client init) -> auth.js (session/guards) -> staff-management.js (page logic) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase.js"></script>
@@ -478,5 +568,7 @@
 <script src="js/main.js"></script>
 <script src="js/staff-management.js"></script>
 <script src="js/notifications.js"></script>
+<!-- NEW: Birthday Celebration feature. Self-contained; does not touch staff-management.js. -->
+<script src="js/birthday-celebration.js"></script>
 </body>
 </html>

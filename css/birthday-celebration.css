@@ -1,0 +1,212 @@
+/* =====================================================================
+   birthday-celebration.css
+   Additive stylesheet for the Birthday Celebration feature.
+   Does not override or redeclare any existing VSAS class names.
+   Brand accent (#E53935, from the page's theme-color) + a warm gold
+   (#F5C451) are used as the celebratory accent pair, kept restrained.
+   ===================================================================== */
+
+:root {
+  --bday-red: #E53935;
+  --bday-red-dark: #B71C1C;
+  --bday-gold: #F5C451;
+  --bday-ink: #1A1A1A;
+}
+
+/* ---------------------------------------------------------------------
+   In-modal flyer preview (admin side)
+   --------------------------------------------------------------------- */
+
+.birthday-preview-box {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 12px;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 320px;
+  overflow: hidden;
+}
+
+.birthday-preview-box img {
+  max-width: 100%;
+  max-height: 296px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+/* ---------------------------------------------------------------------
+   Full-screen celebration overlay (staff-facing experience)
+   Injected dynamically by js/birthday-celebration.js so this component
+   can be dropped onto any VSAS page (including a future staff portal)
+   with just this stylesheet + script — no HTML markup required.
+   --------------------------------------------------------------------- */
+
+.birthday-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+
+.birthday-overlay.is-open {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.birthday-overlay__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(183, 28, 28, 0.35), transparent 60%),
+    rgba(10, 8, 8, 0.86);
+  backdrop-filter: blur(6px);
+}
+
+.birthday-overlay__confetti {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.birthday-overlay__close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.birthday-overlay__close:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.05);
+}
+
+.birthday-overlay__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(92vw, 620px);
+  max-height: 90vh;
+  padding: 0 16px;
+  text-align: center;
+  transform: translateY(14px);
+  opacity: 0;
+  transition: opacity 0.6s ease 0.15s, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+}
+
+.birthday-overlay.is-open .birthday-overlay__content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.birthday-overlay__headline {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.6rem, 5vw, 2.6rem);
+  letter-spacing: 0.02em;
+  background: linear-gradient(100deg, var(--bday-gold), #fff 45%, var(--bday-red) 90%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: bday-headline-sheen 3.5s linear infinite;
+}
+
+@keyframes bday-headline-sheen {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+.birthday-overlay__name {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: clamp(1rem, 2.6vw, 1.25rem);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.birthday-overlay__flyer-frame {
+  width: 100%;
+  max-height: 56vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 24px 60px rgba(0, 0, 0, 0.55);
+  transform: scale(0.9);
+  opacity: 0;
+  transition: opacity 0.55s ease 0.3s, transform 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.3s;
+}
+
+.birthday-overlay.is-open .birthday-overlay__flyer-frame {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.birthday-overlay__flyer {
+  display: block;
+  width: 100%;
+  max-height: 56vh;
+  object-fit: contain;
+  background: #111;
+}
+
+.birthday-overlay__message {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* Settle state: applied a few seconds after opening so the scene calms
+   down into a quiet, professional idle animation rather than looping
+   at full intensity. */
+.birthday-overlay.is-settled .birthday-overlay__headline {
+  animation-duration: 6s;
+}
+
+/* Small mobile screens */
+@media (max-width: 480px) {
+  .birthday-overlay__content { gap: 10px; }
+  .birthday-overlay__flyer-frame { max-height: 46vh; }
+  .birthday-overlay__flyer { max-height: 46vh; }
+  .birthday-overlay__close { top: 12px; right: 12px; width: 36px; height: 36px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .birthday-overlay,
+  .birthday-overlay__content,
+  .birthday-overlay__flyer-frame,
+  .birthday-overlay__headline {
+    transition: opacity 0.3s ease !important;
+    animation: none !important;
+    transform: none !important;
+  }
+}
